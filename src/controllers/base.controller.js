@@ -6,4 +6,5 @@ export const baseExample = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Error al consultar la base de datos', details: error.message });
   }
+  //TEST
 };

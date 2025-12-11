@@ -4,11 +4,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { pool, testConnection, getTables } from './config/db.js';
+import { generarImagen } from './crear-imagen.js';
 
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const app = express();
 
@@ -96,7 +98,35 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
+// Generar imagen con OpenAI
+app.post('/api/crear-imagen', async (req, res) => {
+    try {
+        const { prompt } = req.body;
+
+        if (!prompt) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'El prompt es requerido'
+            });
+        }
+
+        const imageUrl = await generarImagen(prompt);
+
+        res.json({
+            status: 'ok',
+            imageUrl: imageUrl
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Error generando la imagen',
+            error: error.message
+        });
+    }
+});
+
 // ============== START SERVER ==============
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, async () => {

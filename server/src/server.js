@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { pool, testConnection, getTables } from './config/db.js';
-import { generarImagen } from './crear-imagen.js';
+import { generarImagen, generarTexto } from './crear-imagen.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -98,8 +98,8 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
-// Generar imagen con OpenAI
-app.post('/api/crear-imagen', async (req, res) => {
+// Crear publicación completa (imagen + texto)
+app.post('/api/crear-publicacion', async (req, res) => {
     try {
         const { prompt } = req.body;
 
@@ -110,20 +110,27 @@ app.post('/api/crear-imagen', async (req, res) => {
             });
         }
 
+        // Imagen estilo Reckont
         const imageUrl = await generarImagen(prompt);
+
+        // Texto para redes sociales
+        const texto = await generarTexto(prompt);
 
         res.json({
             status: 'ok',
-            imageUrl: imageUrl
+            imageUrl,
+            texto
         });
+
     } catch (error) {
         res.status(500).json({
             status: 'error',
-            message: 'Error generando la imagen',
+            message: 'Error generando la publicación',
             error: error.message
         });
     }
 });
+
 
 // ============== START SERVER ==============
 

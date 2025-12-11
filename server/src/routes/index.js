@@ -9,6 +9,8 @@ import authRoutes from './auth.routes.js';
 import usuariosRoutes from './usuarios.routes.js';
 import campanasRoutes from './campanas.routes.js';
 import contenidoRoutes from './contenido.routes.js';
+import iaRoutes from './ia.routes.js';
+import socialRoutes from './social.routes.js';
 
 const router = Router();
 
@@ -28,6 +30,12 @@ router.use('/campanas', campanasRoutes);
 // Contenido - /api/contenido/*
 router.use('/contenido', contenidoRoutes);
 
+// IA / Generación - /api/ia/*
+router.use('/ia', iaRoutes);
+
+// Redes Sociales - /api/social/*
+router.use('/social', socialRoutes);
+
 /**
  * Información de la API
  * @route GET /api
@@ -35,15 +43,19 @@ router.use('/contenido', contenidoRoutes);
 router.get('/', (req, res) => {
     res.json({
         status: 'ok',
-        message: 'PULLNOVA Marketing API v1.0',
+        message: 'PULLNOVA Marketing API v2.0',
         endpoints: {
             auth: '/api/auth',
             usuarios: '/api/usuarios',
             campanas: '/api/campanas',
-            contenido: '/api/contenido'
+            contenido: '/api/contenido',
+            ia: '/api/ia',
+            social: '/api/social'
         },
         documentation: 'Ver README.md para más información'
     });
 });
 
 export default router;
+
+

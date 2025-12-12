@@ -31,6 +31,24 @@ export const getAll = async ({ tipo = null } = {}) => {
 };
 
 /**
+ * Cuenta el total de prompts
+ * @param {string} tipo - Filtro por tipo
+ * @returns {Promise<number>} Total de prompts
+ */
+export const count = async (tipo = null) => {
+    let query = 'SELECT COUNT(*) as total FROM prompts';
+    const params = [];
+
+    if (tipo) {
+        query += ' WHERE tipo = ?';
+        params.push(tipo);
+    }
+
+    const [rows] = await pool.query(query, params);
+    return rows[0].total;
+};
+
+/**
  * Obtiene un prompt por ID
  * @param {number} id - ID del prompt
  * @returns {Promise<Object|null>} Prompt o null

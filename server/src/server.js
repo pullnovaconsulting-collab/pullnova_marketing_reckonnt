@@ -126,21 +126,67 @@ app.get('*', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+// Importar workers (solo si no estamos en testing)
+let SchedulerWorker = null;
+let MetricsWorker = null;
+
+const initWorkers = async () => {
+    try {
+        // Importación dinámica para evitar errores si los archivos no existen
+        const scheduler = await import('./workers/scheduler.js');
+        const metrics = await import('./workers/metricsCollector.js');
+        SchedulerWorker = scheduler;
+        MetricsWorker = metrics;
+        return true;
+    } catch (error) {
+        console.log('⚠️  Workers no disponibles:', error.message);
+        return false;
+    }
+};
+
 app.listen(PORT, async () => {
-    console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║       🚀 PULLNOVA Marketing Server                 ║');
-    console.log('╠════════════════════════════════════════════════════╣');
-    console.log(`║  Puerto: ${PORT}                                        ║`);
-    console.log(`║  Entorno: ${process.env.NODE_ENV || 'development'}                          ║`);
-    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('╔════════════════════════════════════════════════════════════╗');
+    console.log('║           🚀 PULLNOVA Marketing Server v2.0                ║');
+    console.log('╠════════════════════════════════════════════════════════════╣');
+    console.log(`║  Puerto: ${PORT}                                                ║`);
+    console.log(`║  Entorno: ${(process.env.NODE_ENV || 'development').padEnd(13)}                              ║`);
+    console.log('╚════════════════════════════════════════════════════════════╝');
 
     // Probar conexión a la base de datos
     const connected = await testConnection();
     if (connected) {
         console.log('✅ Base de datos conectada');
+
+        // Iniciar workers si estamos en producción o si ENABLE_WORKERS=true
+        if (process.env.NODE_ENV === 'production' || process.env.ENABLE_WORKERS === 'true') {
+            const workersLoaded = await initWorkers();
+            if (workersLoaded) {
+                // Iniciar worker de publicación automática
+                SchedulerWorker.iniciar();
+                console.log('✅ Worker de publicación automática iniciado');
+
+                // Iniciar worker de métricas
+                MetricsWorker.iniciar();
+                console.log('✅ Worker de recolección de métricas iniciado');
+            }
+        } else {
+            console.log('ℹ️  Workers desactivados (set ENABLE_WORKERS=true para activar)');
+        }
     } else {
         console.log('⚠️  Base de datos no disponible');
     }
+
+    console.log('');
+    console.log('📚 API disponible en: http://localhost:' + PORT + '/api');
+    console.log('📖 Documentación: http://localhost:' + PORT + '/api');
+});
+
+// Manejo de cierre graceful
+process.on('SIGTERM', () => {
+    console.log('Cerrando servidor...');
+    if (SchedulerWorker) SchedulerWorker.detener();
+    if (MetricsWorker) MetricsWorker.detener();
+    process.exit(0);
 });
 
 export default app;

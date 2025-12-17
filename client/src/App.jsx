@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
+import UsersPage from './pages/UsersPage';
 import './App.css';
 
 /**
@@ -48,6 +49,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/usuarios"
+        element={
+          <ProtectedRoute>
+            <UsersPage />
           </ProtectedRoute>
         }
       />

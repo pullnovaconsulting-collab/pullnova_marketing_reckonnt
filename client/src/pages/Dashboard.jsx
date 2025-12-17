@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as api from '../services/api';
 
@@ -112,6 +113,23 @@ export default function Dashboard() {
                                 <span className="stat-label">Contenido</span>
                             </div>
                         </div>
+
+                        {/* Acciones rápidas */}
+                        {user?.rol === 'admin' && (
+                            <div className="data-section" style={{ marginBottom: '1.5rem' }}>
+                                <div className="data-header">
+                                    <span>⚡</span>
+                                    <h3>Acciones Rápidas</h3>
+                                </div>
+                                <div className="data-content">
+                                    <div className="tables-list">
+                                        <Link to="/usuarios" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                                            👥 Gestionar Usuarios
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Database Tables */}
                         <div className="data-section">

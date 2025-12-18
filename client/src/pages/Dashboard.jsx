@@ -115,7 +115,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Acciones rápidas */}
-                        {user?.rol === 'admin' && (
+                        {(user?.rol === 'admin' || user?.rol === 'editor') && (
                             <div className="data-section" style={{ marginBottom: '1.5rem' }}>
                                 <div className="data-header">
                                     <span>⚡</span>
@@ -123,9 +123,17 @@ export default function Dashboard() {
                                 </div>
                                 <div className="data-content">
                                     <div className="tables-list">
-                                        <Link to="/usuarios" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                                            👥 Gestionar Usuarios
+                                        <Link to="/campanas" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                                            📊 Gestionar Campañas
                                         </Link>
+                                        <Link to="/contenido" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                                            📝 Gestionar Contenido
+                                        </Link>
+                                        {user?.rol === 'admin' && (
+                                            <Link to="/usuarios" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                                                👥 Gestionar Usuarios
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
                             </div>

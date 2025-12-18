@@ -10,6 +10,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import UsersPage from './pages/UsersPage';
+import CampanasPage from './pages/CampanasPage';
+import ContenidoPage from './pages/ContenidoPage';
 import './App.css';
 
 /**
@@ -57,6 +59,22 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/campanas"
+        element={
+          <ProtectedRoute>
+            <CampanasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contenido"
+        element={
+          <ProtectedRoute>
+            <ContenidoPage />
           </ProtectedRoute>
         }
       />

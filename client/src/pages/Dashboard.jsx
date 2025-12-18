@@ -129,6 +129,9 @@ export default function Dashboard() {
                                         <Link to="/contenido" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
                                             📝 Gestionar Contenido
                                         </Link>
+                                        <Link to="/ia" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                                            🤖 Asistente IA
+                                        </Link>
                                         {user?.rol === 'admin' && (
                                             <Link to="/usuarios" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
                                                 👥 Gestionar Usuarios

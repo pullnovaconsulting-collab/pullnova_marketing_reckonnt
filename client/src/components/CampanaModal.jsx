@@ -44,17 +44,43 @@ export default function CampanaModal({ isOpen, onClose, onSave, campana, loading
 
     useEffect(() => {
         if (campana) {
+            let parsedPlataformas = [];
+            try {
+                if (Array.isArray(campana.plataformas)) {
+                    parsedPlataformas = campana.plataformas;
+                } else if (typeof campana.plataformas === 'string') {
+                    // Intentar parsear si es string
+                    if (campana.plataformas.trim().startsWith('[') || campana.plataformas.trim().startsWith('{')) {
+                        parsedPlataformas = JSON.parse(campana.plataformas);
+                    } else {
+                        // Si no es JSON valido, quizas es vacio o invalido
+                        parsedPlataformas = [];
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing plataformas:', e);
+                parsedPlataformas = [];
+            }
+
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '';
+                try {
+                    return new Date(dateStr).toISOString().split('T')[0];
+                } catch (e) {
+                    console.error('Error formatting date:', e);
+                    return '';
+                }
+            };
+
             setFormData({
                 nombre: campana.nombre || '',
                 descripcion: campana.descripcion || '',
                 objetivo: campana.objetivo || '',
                 estado: campana.estado || 'borrador',
-                fecha_inicio: campana.fecha_inicio ? campana.fecha_inicio.split('T')[0] : '',
-                fecha_fin: campana.fecha_fin ? campana.fecha_fin.split('T')[0] : '',
+                fecha_inicio: formatDate(campana.fecha_inicio),
+                fecha_fin: formatDate(campana.fecha_fin),
                 presupuesto: campana.presupuesto || '',
-                plataformas: campana.plataformas ?
-                    (typeof campana.plataformas === 'string' ? JSON.parse(campana.plataformas) : campana.plataformas)
-                    : [],
+                plataformas: Array.isArray(parsedPlataformas) ? parsedPlataformas : [],
                 kpi_principal: campana.kpi_principal || 'alcance'
             });
         } else {
@@ -292,7 +318,7 @@ export default function CampanaModal({ isOpen, onClose, onSave, campana, loading
                                     <button
                                         key={plat.value}
                                         type="button"
-                                        className={`plataforma-chip ${formData.plataformas?.includes(plat.value) ? 'active' : ''}`}
+                                        className={`plataforma-chip ${Array.isArray(formData.plataformas) && formData.plataformas.includes(plat.value) ? 'active' : ''}`}
                                         onClick={() => handlePlataformaToggle(plat.value)}
                                     >
                                         <span>{plat.icon}</span>

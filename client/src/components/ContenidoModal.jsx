@@ -8,8 +8,6 @@ import { useState, useEffect } from 'react';
 const TIPOS = [
     { value: 'post', label: 'Post', icon: '📝' },
     { value: 'imagen', label: 'Imagen', icon: '🖼️' },
-    { value: 'video', label: 'Video', icon: '🎬' },
-    { value: 'carrusel', label: 'Carrusel', icon: '📚' },
     { value: 'story', label: 'Story', icon: '📱' }
 ];
 
@@ -155,7 +153,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                         {/* Copy / Texto principal */}
                         <div className="form-group">
                             <label className="form-label" htmlFor="copy_texto">
-                                Copy / Texto del Post
+                                Texto del Post
                             </label>
                             <textarea
                                 id="copy_texto"

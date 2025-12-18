@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import UsersPage from './pages/UsersPage';
 import CampanasPage from './pages/CampanasPage';
 import ContenidoPage from './pages/ContenidoPage';
+import IAPage from './pages/IAPage';
 import './App.css';
 
 /**
@@ -75,6 +76,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <ContenidoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ia"
+        element={
+          <ProtectedRoute>
+            <IAPage />
           </ProtectedRoute>
         }
       />

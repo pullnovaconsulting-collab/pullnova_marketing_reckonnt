@@ -1,0 +1,297 @@
+/* ============================================
+   MÓDULO DE CONTENIDO - ESTILOS
+   ============================================ */
+
+/* Chips en fila */
+.chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.7rem;
+    background: var(--bg-dark);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 16px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chip-btn:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.chip-btn.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: var(--primary-purple);
+    color: var(--text-primary);
+}
+
+/* Toggle sección avanzada */
+.form-section-toggle {
+    margin: 1rem 0;
+}
+
+.toggle-advanced-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    transition: color 0.2s ease;
+}
+
+.toggle-advanced-btn:hover {
+    color: var(--primary-purple);
+}
+
+.advanced-section {
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* Cards de contenido */
+.contenido-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.contenido-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.contenido-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+}
+
+.contenido-card-header {
+    padding: 1rem 1.25rem;
+    background: rgba(99, 102, 241, 0.05);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.contenido-tipo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: var(--primary-purple);
+}
+
+.contenido-card-body {
+    padding: 1.25rem;
+}
+
+.contenido-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+    line-height: 1.3;
+}
+
+.contenido-copy {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.contenido-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.contenido-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.contenido-card-footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid rgba(99, 102, 241, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Badges de estado contenido */
+.badge-pendiente {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+}
+
+.badge-aprobado {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-green);
+}
+
+.badge-programado {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
+.badge-publicado {
+    background: rgba(139, 92, 246, 0.2);
+    color: #8b5cf6;
+}
+
+.badge-rechazado {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--error-red);
+}
+
+/* Badges de plataforma */
+.badge-instagram {
+    background: linear-gradient(45deg, rgba(225, 48, 108, 0.2), rgba(131, 58, 180, 0.2));
+    color: #e1306c;
+}
+
+.badge-facebook {
+    background: rgba(24, 119, 242, 0.2);
+    color: #1877f2;
+}
+
+.badge-linkedin {
+    background: rgba(10, 102, 194, 0.2);
+    color: #0a66c2;
+}
+
+.badge-twitter {
+    background: rgba(29, 161, 242, 0.2);
+    color: #1da1f2;
+}
+
+/* Filtros múltiples */
+.filters-bar-multi {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Stats para contenido */
+.contenido-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 20px;
+}
+
+.stat-chip-value {
+    font-weight: 700;
+    color: var(--primary-purple);
+}
+
+.stat-chip-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Preview del contenido */
+.contenido-preview {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-family: 'SF Pro', -apple-system, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Acciones rápidas de estado */
+.quick-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.quick-action-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.quick-action-btn:hover {
+    opacity: 1;
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Campaña tag */
+.campana-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: var(--primary-purple);
+}

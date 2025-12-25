@@ -266,10 +266,17 @@ export const publicarContenido = async (req, res) => {
 
         switch (cuenta.plataforma) {
             case 'facebook':
+                const fbPayload = { message: contenido.copy_texto || contenido.contenido };
+                
+                // Si hay imagen, agregarla al payload
+                if (contenido.imagenes && contenido.imagenes.length > 0) {
+                    fbPayload.image_url = contenido.imagenes[0].url_imagen;
+                }
+
                 resultado = await MetaService.publishToFacebook(
                     cuenta.page_id,
                     cuenta.access_token,
-                    { message: contenido.copy_texto || contenido.contenido }
+                    fbPayload
                 );
                 break;
 

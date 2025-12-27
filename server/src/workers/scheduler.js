@@ -132,13 +132,13 @@ const publicarEnPlataforma = async (publicacion) => {
 
     switch (cuenta_plataforma) {
         case 'facebook':
-            return await MetaService.publishToFacebook(page_id, access_token, { text: texto });
+            return await MetaService.publishToFacebook(page_id, access_token, { message: texto });
 
         case 'instagram':
             // Instagram requiere imagen, por ahora publicamos solo si hay imagen
             // TODO: Obtener imagen asociada al contenido
             return await MetaService.publishToInstagram(page_id, access_token, {
-                text: texto,
+                caption: texto,
                 // image_url: se necesita implementar
             });
 

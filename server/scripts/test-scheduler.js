@@ -1,12 +1,14 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { pool } from '../src/config/db.js';
 
-// Configurar variables de entorno
+// Configurar variables de entorno PRIMERO
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
+
+// Importar db.js DESPUÉS de cargar variables
+const { pool } = await import('../src/config/db.js');
 
 const createTestPublication = async () => {
     try {

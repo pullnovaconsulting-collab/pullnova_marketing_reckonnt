@@ -143,10 +143,13 @@ export const callbackMeta = async (req, res) => {
         }
 
         // Redirigir a página de éxito en el frontend
-        return res.redirect('/social/success?platform=meta');
+        // Redirigir a página de éxito en el frontend
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_success=true&platform=meta`);
     } catch (error) {
         console.error('Error en callback Meta:', error);
-        return res.redirect('/social/error?message=Error procesando autenticación');
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_error=true&message=Error procesando autenticación`);
     }
 };
 
@@ -223,10 +226,12 @@ export const callbackLinkedIn = async (req, res) => {
             });
         }
 
-        return res.redirect('/social/success?platform=linkedin');
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_success=true&platform=linkedin`);
     } catch (error) {
         console.error('Error en callback LinkedIn:', error);
-        return res.redirect('/social/error?message=Error procesando autenticación');
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_error=true&message=Error procesando autenticación`);
     }
 };
 

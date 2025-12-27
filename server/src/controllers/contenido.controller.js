@@ -6,7 +6,62 @@
 
 import * as ContenidoModel from '../models/contenido.model.js';
 import * as CampanasModel from '../models/campanas.model.js';
+import * as PublicacionesModel from '../models/publicaciones.model.js';
+import * as CuentasSocialesModel from '../models/cuentasSociales.model.js';
 import { sendSuccess, sendError, paginate, paginatedResponse, validateRequired } from '../utils/helpers.js';
+
+/**
+ * Maneja la programación automática de publicaciones
+ * Crea o actualiza la entrada en publicaciones_programadas si el estado es 'programado'
+ */
+const handleScheduling = async (contenido) => {
+    try {
+        // 1. Si NO es programado, verificar si había algo pendiente y borrarlo
+        if (contenido.estado !== 'programado') {
+            const existentes = await PublicacionesModel.getByContenido(contenido.id);
+            const pendiente = existentes.find(p => p.estado === 'pendiente');
+            if (pendiente) {
+                await PublicacionesModel.remove(pendiente.id);
+                console.log(`[AutoSchedule] Eliminada publicación pendiente para contenido ${contenido.id} (estado cambió a ${contenido.estado})`);
+            }
+            return;
+        }
+
+        // 2. Si ES programado, validar fecha
+        if (!contenido.fecha_publicacion) {
+            console.warn(`[AutoSchedule] Contenido ${contenido.id} es programado pero no tiene fecha`);
+            return;
+        }
+
+        // 3. Buscar cuenta conectada para la plataforma
+        const cuentas = await CuentasSocialesModel.getByPlataforma(contenido.plataforma);
+        if (!cuentas || cuentas.length === 0) {
+            console.warn(`[AutoSchedule] No se pudo programar: No hay cuentas conectadas para ${contenido.plataforma}`);
+            return;
+        }
+        const cuenta = cuentas[0]; // Usar la primera disponible
+
+        // 4. Gestionar duplicados (Eliminar anterior si existe para recrear con nuevos datos)
+        const existentes = await PublicacionesModel.getByContenido(contenido.id);
+        const pendiente = existentes.find(p => p.estado === 'pendiente');
+        
+        if (pendiente) {
+            await PublicacionesModel.remove(pendiente.id);
+        }
+
+        // 5. Crear nueva publicación programada
+        await PublicacionesModel.create({
+            contenido_id: contenido.id,
+            cuenta_social_id: cuenta.id,
+            fecha_programada: new Date(contenido.fecha_publicacion)
+        });
+
+        console.log(`[AutoSchedule] ✅ Contenido ${contenido.id} programado para ${contenido.fecha_publicacion} en ${cuenta.nombre_cuenta}`);
+
+    } catch (error) {
+        console.error('[AutoSchedule] Error:', error);
+    }
+};
 
 /**
  * Lista todo el contenido con paginación y filtros
@@ -114,6 +169,9 @@ export const create = async (req, res) => {
             created_by: req.user.id
         });
 
+        // Intentar programar automáticamente
+        await handleScheduling(nuevoContenido);
+
         return sendSuccess(res, { contenido: nuevoContenido }, 'Contenido creado exitosamente', 201);
     } catch (error) {
         console.error('Error creando contenido:', error);
@@ -168,6 +226,10 @@ export const update = async (req, res) => {
         }
 
         const contenido = await ContenidoModel.getById(parseInt(id));
+        
+        // Intentar programar automáticamente
+        await handleScheduling(contenido);
+
         return sendSuccess(res, { contenido }, 'Contenido actualizado');
     } catch (error) {
         console.error('Error actualizando contenido:', error);

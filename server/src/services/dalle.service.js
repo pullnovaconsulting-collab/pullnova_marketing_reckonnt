@@ -7,6 +7,7 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import { pool } from '../config/db.js';
+import * as StorageService from './storage.service.js';
 
 dotenv.config();
 
@@ -63,9 +64,24 @@ export const generarImagen = async ({
         const imageUrl = response.data[0].url;
         const revisedPrompt = response.data[0].revised_prompt;
 
+        // Subir a R2 si está configurado
+        let finalImageUrl = imageUrl;
+        const r2Config = StorageService.verificarConfiguracion();
+        
+        if (r2Config.configurado) {
+            try {
+                console.log('Subiendo imagen a R2...');
+                finalImageUrl = await StorageService.uploadFromUrl(imageUrl, 'dalle');
+                console.log('Imagen subida a R2:', finalImageUrl);
+            } catch (uploadError) {
+                console.error('Error subiendo a R2 (usando URL original):', uploadError);
+                // Continuamos con la URL original si falla la subida
+            }
+        }
+
         return {
             success: true,
-            url_imagen: imageUrl,
+            url_imagen: finalImageUrl,
             prompt_original: prompt,
             prompt_revisado: revisedPrompt,
             modelo: 'dall-e-3',
@@ -110,11 +126,8 @@ export const generarYGuardarImagen = async ({
         // Generar la imagen
         const resultado = await generarImagen({ prompt, size, quality, style });
 
-        if (!resultado.success) {
-            return resultado;
-        }
-
         // Guardar en la base de datos
+        // Nota: generarImagen ya se encargó de subir a R2 si estaba configurado
         const [insertResult] = await pool.query(
             `INSERT INTO imagenes (contenido_id, url_imagen, prompt_imagen, modelo_ia) 
              VALUES (?, ?, ?, ?)`,

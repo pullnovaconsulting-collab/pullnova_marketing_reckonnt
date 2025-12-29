@@ -236,7 +236,7 @@ export const generarPromptImagen = async (req, res) => {
 };
 
 /**
- * Genera una imagen con DALL-E
+ * Genera una imagen con DALL-E (sin subir a R2 automáticamente)
  * @route POST /api/ia/generar-imagen
  */
 export const generarImagen = async (req, res) => {
@@ -255,6 +255,7 @@ export const generarImagen = async (req, res) => {
 
         let resultado;
         if (contenido_id) {
+            // Si hay contenido_id, usar el flujo antiguo (generar y guardar)
             resultado = await DalleService.generarYGuardarImagen({
                 contenido_id: parseInt(contenido_id),
                 prompt,
@@ -263,7 +264,8 @@ export const generarImagen = async (req, res) => {
                 style: style || 'vivid'
             });
         } else {
-            resultado = await DalleService.generarImagen({
+            // Sin contenido_id, generar solo para preview (no subir a R2)
+            resultado = await DalleService.generarImagenSinSubir({
                 prompt,
                 size: size || '1024x1024',
                 quality: quality || 'standard',
@@ -279,6 +281,35 @@ export const generarImagen = async (req, res) => {
     } catch (error) {
         console.error('Error en generarImagen:', error);
         return sendError(res, 'Error generando imagen', 500);
+    }
+};
+
+/**
+ * Confirma una imagen y la sube a R2
+ * @route POST /api/ia/confirmar-imagen
+ */
+export const confirmarImagen = async (req, res) => {
+    try {
+        const { url_temporal, prompt } = req.body;
+
+        const validation = validateRequired(req.body, ['url_temporal']);
+        if (!validation.valid) {
+            return sendError(res, 'Campo requerido: url_temporal', 400);
+        }
+
+        const resultado = await DalleService.confirmarYSubirImagen({
+            url_temporal,
+            prompt: prompt || 'Imagen confirmada'
+        });
+
+        if (!resultado.success) {
+            return sendError(res, `Error confirmando imagen: ${resultado.error}`, 500);
+        }
+
+        return sendSuccess(res, resultado, 'Imagen confirmada y subida a R2');
+    } catch (error) {
+        console.error('Error en confirmarImagen:', error);
+        return sendError(res, 'Error confirmando imagen', 500);
     }
 };
 

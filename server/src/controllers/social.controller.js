@@ -269,6 +269,9 @@ export const publicarContenido = async (req, res) => {
 
         let resultado;
 
+        console.log(`[SocialController] Publicando contenido ${contenidoId} en ${cuenta.plataforma}`);
+        console.log(`[SocialController] Imágenes encontradas: ${contenido.imagenes?.length || 0}`);
+
         switch (cuenta.plataforma) {
             case 'facebook':
                 const fbPayload = { message: contenido.copy_texto || contenido.contenido };
@@ -276,6 +279,9 @@ export const publicarContenido = async (req, res) => {
                 // Si hay imagen, agregarla al payload
                 if (contenido.imagenes && contenido.imagenes.length > 0) {
                     fbPayload.image_url = contenido.imagenes[0].url_imagen;
+                    console.log(`[SocialController] ✅ Imagen detectada para Facebook: ${fbPayload.image_url}`);
+                } else {
+                    console.log(`[SocialController] ⚠️ No hay imágenes para Facebook`);
                 }
 
                 resultado = await MetaService.publishToFacebook(
@@ -287,8 +293,12 @@ export const publicarContenido = async (req, res) => {
 
             case 'instagram':
                 if (!contenido.imagenes || contenido.imagenes.length === 0) {
+                    console.log(`[SocialController] ❌ Error: Instagram requiere imagen`);
                     return sendError(res, 'Instagram requiere una imagen', 400);
                 }
+                
+                console.log(`[SocialController] ✅ Imagen detectada para Instagram: ${contenido.imagenes[0].url_imagen}`);
+                
                 resultado = await MetaService.publishToInstagram(
                     cuenta.page_id,
                     cuenta.access_token,
@@ -300,6 +310,7 @@ export const publicarContenido = async (req, res) => {
                 break;
 
             case 'linkedin':
+                console.log(`[SocialController] Publicando en LinkedIn (solo texto por ahora)`);
                 resultado = await LinkedInService.publishPost(
                     cuenta.access_token,
                     `urn:li:person:${cuenta.page_id}`,

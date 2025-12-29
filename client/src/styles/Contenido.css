@@ -295,3 +295,277 @@
     font-size: 0.75rem;
     color: var(--primary-purple);
 }
+
+/* ============================================
+   MODAL CON PESTAÑAS Y IA
+   ============================================ */
+
+/* Tabs de tipo de contenido */
+.content-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: rgba(99, 102, 241, 0.05);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+    overflow-x: auto;
+}
+
+.content-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.content-tab:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.content-tab.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--primary-purple);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Modal más grande para IA */
+.modal-xl {
+    max-width: 1000px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+/* Secciones de IA */
+.ai-section {
+    margin: 1.5rem 0;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.ai-section-toggle {
+    width: 100%;
+    background: rgba(99, 102, 241, 0.08);
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 1rem 1.25rem;
+    text-align: left;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ai-section-toggle:hover {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.ai-section-content {
+    padding: 1.25rem;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* Tabs de modo de IA */
+.ai-mode-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.ai-mode-tab {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-mode-tab:hover {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.ai-mode-tab.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--primary-purple);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Formularios de IA */
+.ai-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Preview de imagen */
+.image-preview-container {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--border-radius);
+}
+
+.image-preview-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+}
+
+.image-preview {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.image-preview-prompt {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 6px;
+}
+
+.image-preview-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-success {
+    flex: 1;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: var(--border-radius-sm);
+    color: var(--success-green);
+    font-size: 0.9rem;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-danger {
+    flex: 1;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: var(--border-radius-sm);
+    color: var(--error-red);
+    font-size: 0.9rem;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Placeholder para pestañas no implementadas */
+.placeholder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.placeholder-content h3 {
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.placeholder-content p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+/* Imagen confirmada */
+.confirmed-image-preview {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--border-radius);
+}
+
+.confirmed-image-preview img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.confirmed-image-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.confirmed-image-info p {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-secondary);
+}
+
+.confirmed-image-url {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    word-break: break-all;
+}

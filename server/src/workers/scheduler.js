@@ -6,6 +6,7 @@
 
 import * as PublicacionesModel from '../models/publicaciones.model.js';
 import * as ContenidoModel from '../models/contenido.model.js';
+import * as ImagenesModel from '../models/imagenes.model.js';
 import * as MetricasModel from '../models/metricas.model.js';
 import * as MetaService from '../services/meta.service.js';
 import * as LinkedInService from '../services/linkedin.service.js';
@@ -117,7 +118,7 @@ export const ejecutarCiclo = async () => {
  * @returns {Promise<Object>} Resultado de la publicación
  */
 const publicarEnPlataforma = async (publicacion) => {
-    const { cuenta_plataforma, access_token, page_id, copy_texto, contenido_texto, titulo } = publicacion;
+    const { contenido_id, cuenta_plataforma, access_token, page_id, copy_texto, contenido_texto, titulo } = publicacion;
 
     // Preparar el contenido
     const texto = copy_texto || contenido_texto || titulo;
@@ -130,16 +131,32 @@ const publicarEnPlataforma = async (publicacion) => {
         return { success: false, error: 'Token de acceso no disponible' };
     }
 
+    // Obtener imágenes asociadas al contenido
+    let imageUrl = null;
+    try {
+        const imagenes = await ImagenesModel.getByContenido(contenido_id);
+        if (imagenes && imagenes.length > 0) {
+            imageUrl = imagenes[0].url_imagen;
+            console.log(`[Scheduler] Imagen encontrada para contenido ${contenido_id}: ${imageUrl}`);
+        }
+    } catch (error) {
+        console.error(`[Scheduler] Error obteniendo imágenes para contenido ${contenido_id}:`, error);
+    }
+
     switch (cuenta_plataforma) {
         case 'facebook':
-            return await MetaService.publishToFacebook(page_id, access_token, { message: texto });
+            return await MetaService.publishToFacebook(page_id, access_token, { 
+                message: texto,
+                image_url: imageUrl 
+            });
 
         case 'instagram':
-            // Instagram requiere imagen, por ahora publicamos solo si hay imagen
-            // TODO: Obtener imagen asociada al contenido
+            if (!imageUrl) {
+                return { success: false, error: 'Instagram requiere una imagen para publicar' };
+            }
             return await MetaService.publishToInstagram(page_id, access_token, {
                 caption: texto,
-                // image_url: se necesita implementar
+                image_url: imageUrl
             });
 
         case 'linkedin':

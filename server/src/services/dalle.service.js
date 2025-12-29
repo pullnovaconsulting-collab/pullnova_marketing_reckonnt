@@ -24,13 +24,82 @@ const getClient = () => {
 };
 
 /**
- * Genera una imagen con DALL-E 3
+ * Genera una imagen con DALL-E 3 sin subir a R2 (para preview)
  * @param {Object} options - Opciones de generación
  * @param {string} options.prompt - Descripción de la imagen a generar
  * @param {string} options.size - Tamaño de la imagen (1024x1024, 1792x1024, 1024x1792)
  * @param {string} options.quality - Calidad (standard, hd)
  * @param {string} options.style - Estilo (vivid, natural)
- * @returns {Promise<Object>} Resultado con URL de la imagen
+ * @returns {Promise<Object>} Resultado con URL temporal de OpenAI
+ */
+export const generarImagenSinSubir = async ({
+    prompt,
+    size = '1024x1024',
+    quality = 'standard',
+    style = 'vivid'
+}) => {
+    try {
+        // Validar tamaño
+        const validSizes = ['1024x1024', '1792x1024', '1024x1792'];
+        if (!validSizes.includes(size)) {
+            size = '1024x1024';
+        }
+
+        // Verificar cliente
+        const client = getClient();
+        if (!client) {
+            return { success: false, error: 'OpenAI/DALL-E API no configurada' };
+        }
+
+        // Generar imagen con DALL-E 3
+        const response = await client.images.generate({
+            model: 'dall-e-3',
+            prompt: prompt,
+            n: 1,
+            size: size,
+            quality: quality,
+            style: style
+        });
+
+        const imageUrl = response.data[0].url;
+        const revisedPrompt = response.data[0].revised_prompt;
+
+        // NO subir a R2, solo devolver URL temporal de OpenAI para preview
+        return {
+            success: true,
+            url_temporal: imageUrl, // URL temporal de OpenAI
+            url_imagen: imageUrl, // Mantenemos compatibilidad
+            prompt_original: prompt,
+            prompt_revisado: revisedPrompt,
+            modelo: 'dall-e-3',
+            configuracion: { size, quality, style }
+        };
+    } catch (error) {
+        console.error('Error generando imagen con DALL-E:', error);
+
+        // Manejar errores específicos de OpenAI
+        if (error.code === 'content_policy_violation') {
+            return {
+                success: false,
+                error: 'El prompt viola las políticas de contenido de OpenAI. Intenta con una descripción diferente.'
+            };
+        }
+
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
+
+/**
+ * Genera una imagen con DALL-E 3 y sube a R2
+ * @param {Object} options - Opciones de generación
+ * @param {string} options.prompt - Descripción de la imagen a generar
+ * @param {string} options.size - Tamaño de la imagen (1024x1024, 1792x1024, 1024x1792)
+ * @param {string} options.quality - Calidad (standard, hd)
+ * @param {string} options.style - Estilo (vivid, natural)
+ * @returns {Promise<Object>} Resultado con URL de la imagen en R2
  */
 export const generarImagen = async ({
     prompt,
@@ -155,6 +224,48 @@ export const generarYGuardarImagen = async ({
         return {
             success: false,
             error: error.message
+        };
+    }
+};
+
+/**
+ * Confirma una imagen temporal y la sube a R2
+ * @param {Object} options - Opciones
+ * @param {string} options.url_temporal - URL temporal de OpenAI
+ * @param {string} options.prompt - Prompt usado
+ * @returns {Promise<Object>} URL permanente de R2
+ */
+export const confirmarYSubirImagen = async ({ url_temporal, prompt }) => {
+    try {
+        // Verificar configuración de R2
+        const r2Config = StorageService.verificarConfiguracion();
+        
+        if (!r2Config.configurado) {
+            // Si R2 no está configurado, devolvemos la URL temporal
+            return {
+                success: true,
+                url_imagen: url_temporal,
+                mensaje: 'R2 no configurado, usando URL temporal'
+            };
+        }
+
+        // Subir imagen a R2
+        console.log('Confirmando imagen - subiendo a R2...');
+        const r2Url = await StorageService.uploadFromUrl(url_temporal, 'dalle');
+        console.log('Imagen confirmada y subida a R2:', r2Url);
+
+        return {
+            success: true,
+            url_imagen: r2Url,
+            url_temporal: url_temporal,
+            prompt: prompt
+        };
+    } catch (error) {
+        console.error('Error confirmando y subiendo imagen:', error);
+        return {
+            success: false,
+            error: error.message,
+            url_temporal: url_temporal // Devolvemos la URL temporal en caso de error
         };
     }
 };

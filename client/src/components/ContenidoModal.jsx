@@ -1,13 +1,15 @@
 /**
- * @fileoverview Modal de Contenido
- * @description Componente modal para crear/editar contenido de marketing
+ * @fileoverview Modal de Contenido con IA Integrada
+ * @description Componente modal para crear/editar contenido con funcionalidades de IA
  */
 
 import { useState, useEffect } from 'react';
+import * as iaApi from '../services/iaApi';
 
 const TIPOS = [
     { value: 'post', label: 'Post', icon: '📝' },
-    { value: 'imagen', label: 'Imagen', icon: '🖼️' },
+    { value: 'video', label: 'Video', icon: '🎬' },
+    { value: 'carrusel', label: 'Carrusel', icon: '📚' },
     { value: 'story', label: 'Story', icon: '📱' }
 ];
 
@@ -29,6 +31,8 @@ const ESTADOS = [
 export default function ContenidoModal({ isOpen, onClose, onSave, contenido, campanas = [], loading }) {
     const isEditing = !!contenido;
 
+    // Estados del formulario principal
+    const [activeTab, setActiveTab] = useState('post');
     const [formData, setFormData] = useState({
         titulo: '',
         copy_texto: '',
@@ -42,7 +46,41 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
         modelo_ia: ''
     });
     const [errors, setErrors] = useState({});
-    const [showAdvanced, setShowAdvanced] = useState(false);
+
+    // Estados de IA - Generación de texto
+    const [showTextAI, setShowTextAI] = useState(false);
+    const [generatingText, setGeneratingText] = useState(false);
+    const [textAIMode, setTextAIMode] = useState('copy'); // 'copy' o 'mejorar'
+    const [copyForm, setCopyForm] = useState({
+        tema: '',
+        plataforma: 'instagram',
+        objetivo: 'educar',
+        tono: 'profesional'
+    });
+    const [mejorarForm, setMejorarForm] = useState({
+        texto: '',
+        instruccion: 'mejorar para redes sociales'
+    });
+
+    // Estados de IA - Generación de imagen
+    const [showImageAI, setShowImageAI] = useState(false);
+    const [generatingImage, setGeneratingImage] = useState(false);
+    const [imagenForm, setImagenForm] = useState({
+        descripcion: '',
+        prompt: '',
+        estilo: 'moderno y profesional',
+        colores: 'azules y blancos corporativos',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid'
+    });
+    const [imagePreview, setImagePreview] = useState(null); // { url_temporal, prompt_revisado }
+    const [confirmedImageUrl, setConfirmedImageUrl] = useState(null); // URL de R2 confirmada
+    const [confirmedImagePrompt, setConfirmedImagePrompt] = useState(null);
+    const [confirmingImage, setConfirmingImage] = useState(false);
+
+    const [aiError, setAiError] = useState(null);
+    const [aiSuccess, setAiSuccess] = useState(null);
 
     useEffect(() => {
         if (contenido) {
@@ -58,9 +96,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                 prompt_usado: contenido.prompt_usado || '',
                 modelo_ia: contenido.modelo_ia || ''
             });
-            if (contenido.prompt_usado || contenido.modelo_ia) {
-                setShowAdvanced(true);
-            }
+            setActiveTab(contenido.tipo || 'post');
         } else {
             setFormData({
                 titulo: '',
@@ -74,9 +110,16 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                 prompt_usado: '',
                 modelo_ia: ''
             });
-            setShowAdvanced(false);
+            setActiveTab('post');
         }
         setErrors({});
+        setShowTextAI(false);
+        setShowImageAI(false);
+        setImagePreview(null);
+        setConfirmedImageUrl(null);
+        setConfirmedImagePrompt(null);
+        setAiError(null);
+        setAiSuccess(null);
     }, [contenido, isOpen]);
 
     const handleChange = (e) => {
@@ -89,18 +132,15 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
 
     const validate = () => {
         const newErrors = {};
-
         if (!formData.titulo.trim()) {
             newErrors.titulo = 'El título es requerido';
         }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
         if (!validate()) return;
 
         const dataToSave = {
@@ -109,87 +149,575 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
             fecha_publicacion: formData.fecha_publicacion || null
         };
 
-        // Limpiar campos vacíos
+        // Si hay una imagen confirmada, agregarla a los datos
+        if (confirmedImageUrl) {
+            dataToSave.imagen_url = confirmedImageUrl;
+            dataToSave.imagen_prompt = confirmedImagePrompt;
+        }
+
+        // Limpiar campos vacíos (excepto campana_id e imagen_url)
         Object.keys(dataToSave).forEach(key => {
             if (dataToSave[key] === '' || dataToSave[key] === null) {
-                if (key !== 'campana_id') delete dataToSave[key];
+                if (key !== 'campana_id' && key !== 'imagen_url') delete dataToSave[key];
             }
         });
 
         onSave(dataToSave);
     };
 
+    // ========== Funciones de IA - Texto ==========
+    const handleGenerarCopy = async () => {
+        if (!copyForm.tema.trim()) {
+            setAiError('El tema es requerido');
+            return;
+        }
+
+        try {
+            setGeneratingText(true);
+            setAiError(null);
+
+            const res = await iaApi.generarCopy({
+                tema: copyForm.tema,
+                plataforma: copyForm.plataforma,
+                objetivo: copyForm.objetivo,
+                tono: copyForm.tono,
+                variaciones: 1,
+                modelo: 'openai',
+                guardar: false
+            });
+
+            const contenidoGenerado = res.data.generacion.contenido;
+            setFormData(prev => ({ ...prev, copy_texto: contenidoGenerado }));
+            setAiSuccess('Texto generado exitosamente');
+            setTimeout(() => setAiSuccess(null), 3000);
+        } catch (err) {
+            setAiError(err.message || 'Error generando texto');
+        } finally {
+            setGeneratingText(false);
+        }
+    };
+
+    const handleMejorarTexto = async () => {
+        if (!mejorarForm.texto.trim()) {
+            setAiError('El texto es requerido');
+            return;
+        }
+
+        try {
+            setGeneratingText(true);
+            setAiError(null);
+
+            const res = await iaApi.mejorarTexto({
+                texto: mejorarForm.texto,
+                instruccion: mejorarForm.instruccion,
+                modelo: 'openai'
+            });
+
+            const textoMejorado = res.data.contenido || res.data.texto_mejorado;
+            setFormData(prev => ({ ...prev, copy_texto: textoMejorado }));
+            setAiSuccess('Texto mejorado exitosamente');
+            setTimeout(() => setAiSuccess(null), 3000);
+        } catch (err) {
+            setAiError(err.message || 'Error mejorando texto');
+        } finally {
+            setGeneratingText(false);
+        }
+    };
+
+    // ========== Funciones de IA - Imagen ==========
+    const handleGenerarPrompt = async () => {
+        if (!imagenForm.descripcion.trim()) {
+            setAiError('La descripción es requerida');
+            return;
+        }
+
+        try {
+            setGeneratingImage(true);
+            setAiError(null);
+
+            const res = await iaApi.generarPromptImagen({
+                descripcion: imagenForm.descripcion,
+                estilo: imagenForm.estilo,
+                colores: imagenForm.colores
+            });
+
+            const generatedPrompt = res.data.prompt || res.data.contenido || res.data.prompt_imagen || '';
+            setImagenForm(prev => ({ ...prev, prompt: generatedPrompt }));
+            setAiSuccess('Prompt generado');
+            setTimeout(() => setAiSuccess(null), 3000);
+        } catch (err) {
+            setAiError(err.message || 'Error generando prompt');
+        } finally {
+            setGeneratingImage(false);
+        }
+    };
+
+    const handleGenerarImagen = async () => {
+        if (!imagenForm.prompt.trim()) {
+            setAiError('El prompt es requerido');
+            return;
+        }
+
+        try {
+            setGeneratingImage(true);
+            setAiError(null);
+
+            const res = await iaApi.generarImagen({
+                prompt: imagenForm.prompt,
+                size: imagenForm.size,
+                quality: imagenForm.quality,
+                style: imagenForm.style
+            });
+
+            const imageUrl = res.data.url_temporal || res.data.url_imagen;
+            const revisedPrompt = res.data.prompt_revisado;
+
+            setImagePreview({
+                url_temporal: imageUrl,
+                prompt_revisado: revisedPrompt,
+                prompt_original: imagenForm.prompt
+            });
+
+            setAiSuccess('Imagen generada - Confirma para usar');
+            setTimeout(() => setAiSuccess(null), 3000);
+        } catch (err) {
+            setAiError(err.message || 'Error generando imagen');
+        } finally {
+            setGeneratingImage(false);
+        }
+    };
+
+    const handleConfirmarImagen = async () => {
+        if (!imagePreview) return;
+
+        try {
+            setConfirmingImage(true);
+            setAiError(null);
+
+            const res = await iaApi.confirmarYSubirImagen({
+                url_temporal: imagePreview.url_temporal,
+                prompt: imagePreview.prompt_revisado || imagePreview.prompt_original
+            });
+
+            const r2Url = res.data.url_imagen;
+            const prompt = imagePreview.prompt_revisado || imagePreview.prompt_original;
+            
+            // Guardar URL confirmada y prompt para usarlos al guardar el contenido
+            setConfirmedImageUrl(r2Url);
+            setConfirmedImagePrompt(prompt);
+            setImagePreview(null);
+            
+            setAiSuccess('Imagen confirmada - Se asociará al guardar el contenido');
+            setTimeout(() => setAiSuccess(null), 3000);
+        } catch (err) {
+            setAiError(err.message || 'Error confirmando imagen');
+        } finally {
+            setConfirmingImage(false);
+        }
+    };
+
+    const handleRechazarImagen = () => {
+        setImagePreview(null);
+        setAiSuccess('Imagen descartada');
+        setTimeout(() => setAiSuccess(null), 2000);
+    };
+
     if (!isOpen) return null;
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+            <div className="modal modal-xl" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 className="modal-title">
-                        {isEditing ? '📝 Editar Contenido' : '📝 Nuevo Contenido'}
+                        {isEditing ? '📝 Editar Contenido' : '✨ Nuevo Contenido con IA'}
                     </h2>
                     <button className="modal-close" onClick={onClose}>×</button>
                 </div>
 
+                {/* Tabs de tipo de contenido */}
+                <div className="content-tabs">
+                    {TIPOS.map(tipo => (
+                        <button
+                            key={tipo.value}
+                            type="button"
+                            className={`content-tab ${formData.tipo === tipo.value ? 'active' : ''}`}
+                            onClick={() => {
+                                setFormData(prev => ({ ...prev, tipo: tipo.value }));
+                                setActiveTab(tipo.value);
+                            }}
+                        >
+                            <span>{tipo.icon}</span>
+                            <span>{tipo.label}</span>
+                        </button>
+                    ))}
+                </div>
+
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
-                        {/* Título */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="titulo">
-                                Título *
-                            </label>
-                            <input
-                                type="text"
-                                id="titulo"
-                                name="titulo"
-                                className="form-input"
-                                value={formData.titulo}
-                                onChange={handleChange}
-                                placeholder="Título del contenido"
-                            />
-                            {errors.titulo && <span className="form-error">{errors.titulo}</span>}
-                        </div>
+                        {/* Alertas de IA */}
+                        {aiSuccess && <div className="alert alert-success">✓ {aiSuccess}</div>}
+                        {aiError && <div className="alert alert-error">⚠️ {aiError}</div>}
 
-                        {/* Copy / Texto principal */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="copy_texto">
-                                Texto del Post
-                            </label>
-                            <textarea
-                                id="copy_texto"
-                                name="copy_texto"
-                                className="form-input form-textarea"
-                                value={formData.copy_texto}
-                                onChange={handleChange}
-                                placeholder="Escribe el copy para la publicación..."
-                                rows={4}
-                            />
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                {formData.copy_texto.length} caracteres
-                            </div>
-                        </div>
+                        {/* Pestaña POST */}
+                        {activeTab === 'post' && (
+                            <>
+                                {/* Generador de Texto con IA */}
+                                <div className="ai-section">
+                                    <button
+                                        type="button"
+                                        className="ai-section-toggle"
+                                        onClick={() => setShowTextAI(!showTextAI)}
+                                    >
+                                        {showTextAI ? '▼' : '▶'} 🤖 Generar Texto con IA
+                                    </button>
 
-                        {/* Tipo y Plataforma */}
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label className="form-label">Tipo de Contenido</label>
-                                <div className="chips-row">
-                                    {TIPOS.map(tipo => (
-                                        <button
-                                            key={tipo.value}
-                                            type="button"
-                                            className={`chip-btn ${formData.tipo === tipo.value ? 'active' : ''}`}
-                                            onClick={() => setFormData(prev => ({ ...prev, tipo: tipo.value }))}
-                                        >
-                                            <span>{tipo.icon}</span>
-                                            <span>{tipo.label}</span>
-                                        </button>
-                                    ))}
+                                    {showTextAI && (
+                                        <div className="ai-section-content">
+                                            <div className="ai-mode-tabs">
+                                                <button
+                                                    type="button"
+                                                    className={`ai-mode-tab ${textAIMode === 'copy' ? 'active' : ''}`}
+                                                    onClick={() => setTextAIMode('copy')}
+                                                >
+                                                    Generar Copy
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`ai-mode-tab ${textAIMode === 'mejorar' ? 'active' : ''}`}
+                                                    onClick={() => setTextAIMode('mejorar')}
+                                                >
+                                                    Mejorar Texto
+                                                </button>
+                                            </div>
+
+                                            {textAIMode === 'copy' && (
+                                                <div className="ai-form">
+                                                    <div className="form-group">
+                                                        <label className="form-label">Tema del contenido *</label>
+                                                        <textarea
+                                                            className="form-input form-textarea"
+                                                            value={copyForm.tema}
+                                                            onChange={(e) => setCopyForm(prev => ({ ...prev, tema: e.target.value }))}
+                                                            placeholder="Ej: Promoción de Black Friday con 30% de descuento"
+                                                            rows={3}
+                                                        />
+                                                    </div>
+
+                                                    <div className="form-row">
+                                                        <div className="form-group">
+                                                            <label className="form-label">Plataforma</label>
+                                                            <select
+                                                                className="form-select"
+                                                                value={copyForm.plataforma}
+                                                                onChange={(e) => setCopyForm(prev => ({ ...prev, plataforma: e.target.value }))}
+                                                            >
+                                                                <option value="instagram">Instagram</option>
+                                                                <option value="facebook">Facebook</option>
+                                                                <option value="linkedin">LinkedIn</option>
+                                                                <option value="twitter">Twitter/X</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label className="form-label">Objetivo</label>
+                                                            <select
+                                                                className="form-select"
+                                                                value={copyForm.objetivo}
+                                                                onChange={(e) => setCopyForm(prev => ({ ...prev, objetivo: e.target.value }))}
+                                                            >
+                                                                <option value="educar">Educar</option>
+                                                                <option value="promocionar">Promocionar</option>
+                                                                <option value="convertir">Convertir</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label className="form-label">Tono</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-input"
+                                                                value={copyForm.tono}
+                                                                onChange={(e) => setCopyForm(prev => ({ ...prev, tono: e.target.value }))}
+                                                                placeholder="profesional, casual..."
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        className="btn-primary"
+                                                        onClick={handleGenerarCopy}
+                                                        disabled={generatingText || !copyForm.tema.trim()}
+                                                    >
+                                                        {generatingText ? '⏳ Generando...' : '✨ Generar Copy'}
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {textAIMode === 'mejorar' && (
+                                                <div className="ai-form">
+                                                    <div className="form-group">
+                                                        <label className="form-label">Texto a mejorar *</label>
+                                                        <textarea
+                                                            className="form-input form-textarea"
+                                                            value={mejorarForm.texto}
+                                                            onChange={(e) => setMejorarForm(prev => ({ ...prev, texto: e.target.value }))}
+                                                            placeholder="Pega aquí el texto que quieres mejorar..."
+                                                            rows={4}
+                                                        />
+                                                    </div>
+
+                                                    <div className="form-group">
+                                                        <label className="form-label">Instrucción</label>
+                                                        <select
+                                                            className="form-select"
+                                                            value={mejorarForm.instruccion}
+                                                            onChange={(e) => setMejorarForm(prev => ({ ...prev, instruccion: e.target.value }))}
+                                                        >
+                                                            <option value="mejorar para redes sociales">Mejorar para redes sociales</option>
+                                                            <option value="hacerlo más profesional">Hacerlo más profesional</option>
+                                                            <option value="hacerlo más casual y cercano">Hacerlo más casual</option>
+                                                            <option value="resumir en menos palabras">Resumir</option>
+                                                            <option value="expandir con más detalles">Expandir</option>
+                                                            <option value="agregar emojis relevantes">Agregar emojis</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        className="btn-primary"
+                                                        onClick={handleMejorarTexto}
+                                                        disabled={generatingText || !mejorarForm.texto.trim()}
+                                                    >
+                                                        {generatingText ? '⏳ Mejorando...' : '✨ Mejorar Texto'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="form-row">
+                                {/* Campo de texto del post */}
+                                <div className="form-group">
+                                    <label className="form-label" htmlFor="copy_texto">
+                                        Texto del Post
+                                    </label>
+                                    <textarea
+                                        id="copy_texto"
+                                        name="copy_texto"
+                                        className="form-input form-textarea"
+                                        value={formData.copy_texto}
+                                        onChange={handleChange}
+                                        placeholder="Escribe o genera el copy para la publicación..."
+                                        rows={5}
+                                    />
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                        {formData.copy_texto.length} caracteres
+                                    </div>
+                                </div>
+
+                                {/* Generador de Imagen con IA */}
+                                <div className="ai-section">
+                                    <button
+                                        type="button"
+                                        className="ai-section-toggle"
+                                        onClick={() => setShowImageAI(!showImageAI)}
+                                    >
+                                        {showImageAI ? '▼' : '▶'} 🎨 Generar Imagen con IA
+                                    </button>
+
+                                    {showImageAI && (
+                                        <div className="ai-section-content">
+                                            <div className="ai-form">
+                                                <div className="form-group">
+                                                    <label className="form-label">Descripción de la imagen</label>
+                                                    <textarea
+                                                        className="form-input form-textarea"
+                                                        value={imagenForm.descripcion}
+                                                        onChange={(e) => setImagenForm(prev => ({ ...prev, descripcion: e.target.value }))}
+                                                        placeholder="Describe qué imagen quieres crear..."
+                                                        rows={2}
+                                                    />
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    className="btn-secondary"
+                                                    onClick={handleGenerarPrompt}
+                                                    disabled={generatingImage || !imagenForm.descripcion.trim()}
+                                                    style={{ marginBottom: '1rem', width: '100%' }}
+                                                >
+                                                    🪄 Generar Prompt Optimizado
+                                                </button>
+
+                                                <div className="form-group">
+                                                    <label className="form-label">Prompt para DALL-E *</label>
+                                                    <textarea
+                                                        className="form-input form-textarea"
+                                                        value={imagenForm.prompt}
+                                                        onChange={(e) => setImagenForm(prev => ({ ...prev, prompt: e.target.value }))}
+                                                        placeholder="Prompt optimizado para la generación de imagen..."
+                                                        rows={3}
+                                                    />
+                                                </div>
+
+                                                <div className="form-row">
+                                                    <div className="form-group">
+                                                        <label className="form-label">Tamaño</label>
+                                                        <select
+                                                            className="form-select"
+                                                            value={imagenForm.size}
+                                                            onChange={(e) => setImagenForm(prev => ({ ...prev, size: e.target.value }))}
+                                                        >
+                                                            <option value="1024x1024">1024x1024 (Cuadrado)</option>
+                                                            <option value="1792x1024">1792x1024 (Horizontal)</option>
+                                                            <option value="1024x1792">1024x1792 (Vertical)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label className="form-label">Calidad</label>
+                                                        <select
+                                                            className="form-select"
+                                                            value={imagenForm.quality}
+                                                            onChange={(e) => setImagenForm(prev => ({ ...prev, quality: e.target.value }))}
+                                                        >
+                                                            <option value="standard">Standard</option>
+                                                            <option value="hd">HD</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label className="form-label">Estilo</label>
+                                                        <select
+                                                            className="form-select"
+                                                            value={imagenForm.style}
+                                                            onChange={(e) => setImagenForm(prev => ({ ...prev, style: e.target.value }))}
+                                                        >
+                                                            <option value="vivid">Vivid</option>
+                                                            <option value="natural">Natural</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    className="btn-primary"
+                                                    onClick={handleGenerarImagen}
+                                                    disabled={generatingImage || !imagenForm.prompt.trim()}
+                                                >
+                                                    {generatingImage ? '⏳ Generando imagen...' : '🎨 Generar Imagen'}
+                                                </button>
+
+                                                {/* Preview de imagen generada */}
+                                                {imagePreview && (
+                                                    <div className="image-preview-container">
+                                                        <h4 className="image-preview-title">Vista Previa de Imagen</h4>
+                                                        <img
+                                                            src={imagePreview.url_temporal}
+                                                            alt="Preview"
+                                                            className="image-preview"
+                                                        />
+                                                        {imagePreview.prompt_revisado && (
+                                                            <p className="image-preview-prompt">
+                                                                <strong>Prompt revisado:</strong> {imagePreview.prompt_revisado}
+                                                            </p>
+                                                        )}
+                                                        <div className="image-preview-actions">
+                                                            <button
+                                                                type="button"
+                                                                className="btn-success"
+                                                                onClick={handleConfirmarImagen}
+                                                                disabled={confirmingImage}
+                                                            >
+                                                                {confirmingImage ? '⏳ Guardando...' : '✓ Confirmar y Usar'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="btn-danger"
+                                                                onClick={handleRechazarImagen}
+                                                                disabled={confirmingImage}
+                                                            >
+                                                                × Descartar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Imagen confirmada o URL manual */}
+                                {confirmedImageUrl ? (
+                                    <div className="form-group">
+                                        <label className="form-label">Imagen Confirmada dle Post</label>
+                                        <div className="confirmed-image-preview">
+                                            <img src={confirmedImageUrl} alt="Imagen confirmada" />
+                                            <div className="confirmed-image-info">
+                                                <p><strong>✓ Imagen lista para publicar</strong></p>
+                                                <p className="confirmed-image-url">{confirmedImageUrl}</p>
+                                                <button
+                                                    type="button"
+                                                    className="btn-secondary"
+                                                    onClick={() => {
+                                                        setConfirmedImageUrl(null);
+                                                        setConfirmedImagePrompt(null);
+                                                    }}
+                                                    style={{ marginTop: '0.5rem' }}
+                                                >
+                                                    × Quitar Imagen
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="form-group">
+                                        <label className="form-label" htmlFor="contenido">
+                                            URL de Imagen (Opcional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="contenido"
+                                            name="contenido"
+                                            className="form-input"
+                                            value={formData.contenido}
+                                            onChange={handleChange}
+                                            placeholder="O ingresa una URL manualmente..."
+                                        />
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                            Genera una imagen con IA arriba o ingresa una URL manualmente
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* Otras pestañas (placeholder por ahora) */}
+                        {activeTab !== 'post' && (
+                            <div className="placeholder-content">
+                                <div className="placeholder-icon">{TIPOS.find(t => t.value === activeTab)?.icon}</div>
+                                <h3>Contenido {TIPOS.find(t => t.value === activeTab)?.label}</h3>
+                                <p>Esta funcionalidad estará disponible próximamente</p>
+                            </div>
+                        )}
+
+                        {/* Campos comunes a todos los tipos */}
+                        <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                            {/* Título */}
+                            <div className="form-group">
+                                <label className="form-label" htmlFor="titulo">
+                                    Título *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="titulo"
+                                    name="titulo"
+                                    className="form-input"
+                                    value={formData.titulo}
+                                    onChange={handleChange}
+                                    placeholder="Título del contenido"
+                                />
+                                {errors.titulo && <span className="form-error">{errors.titulo}</span>}
+                            </div>
+
+                            {/* Plataforma */}
                             <div className="form-group">
                                 <label className="form-label">Plataforma</label>
                                 <div className="chips-row">
@@ -206,107 +734,63 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                                     ))}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Campaña y Estado */}
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label className="form-label" htmlFor="campana_id">
-                                    Campaña Asociada
-                                </label>
-                                <select
-                                    id="campana_id"
-                                    name="campana_id"
-                                    className="form-select"
-                                    value={formData.campana_id}
-                                    onChange={handleChange}
-                                >
-                                    <option value="">Sin campaña</option>
-                                    {campanas.map(camp => (
-                                        <option key={camp.id} value={camp.id}>
-                                            {camp.nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label" htmlFor="estado">
-                                    Estado
-                                </label>
-                                <select
-                                    id="estado"
-                                    name="estado"
-                                    className="form-select"
-                                    value={formData.estado}
-                                    onChange={handleChange}
-                                >
-                                    {ESTADOS.map(est => (
-                                        <option key={est.value} value={est.value}>
-                                            {est.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Fecha de publicación */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="fecha_publicacion">
-                                Fecha de Publicación Programada
-                            </label>
-                            <input
-                                type="datetime-local"
-                                id="fecha_publicacion"
-                                name="fecha_publicacion"
-                                className="form-input"
-                                value={formData.fecha_publicacion}
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        {/* Sección avanzada (IA) */}
-                        <div className="form-section-toggle">
-                            <button
-                                type="button"
-                                className="toggle-advanced-btn"
-                                onClick={() => setShowAdvanced(!showAdvanced)}
-                            >
-                                {showAdvanced ? '▼' : '▶'} Información de IA (opcional)
-                            </button>
-                        </div>
-
-                        {showAdvanced && (
-                            <div className="advanced-section">
+                            {/* Campaña y Estado */}
+                            <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label" htmlFor="prompt_usado">
-                                        Prompt Usado
+                                    <label className="form-label" htmlFor="campana_id">
+                                        Campaña Asociada
                                     </label>
-                                    <textarea
-                                        id="prompt_usado"
-                                        name="prompt_usado"
-                                        className="form-input form-textarea"
-                                        value={formData.prompt_usado}
+                                    <select
+                                        id="campana_id"
+                                        name="campana_id"
+                                        className="form-select"
+                                        value={formData.campana_id}
                                         onChange={handleChange}
-                                        placeholder="Prompt utilizado para generar el contenido con IA..."
-                                        rows={2}
-                                    />
+                                    >
+                                        <option value="">Sin campaña</option>
+                                        {campanas.map(camp => (
+                                            <option key={camp.id} value={camp.id}>
+                                                {camp.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label" htmlFor="modelo_ia">
-                                        Modelo de IA
+                                    <label className="form-label" htmlFor="estado">
+                                        Estado
                                     </label>
-                                    <input
-                                        type="text"
-                                        id="modelo_ia"
-                                        name="modelo_ia"
-                                        className="form-input"
-                                        value={formData.modelo_ia}
+                                    <select
+                                        id="estado"
+                                        name="estado"
+                                        className="form-select"
+                                        value={formData.estado}
                                         onChange={handleChange}
-                                        placeholder="ej: gemini, gpt-4, dall-e-3"
-                                    />
+                                    >
+                                        {ESTADOS.map(est => (
+                                            <option key={est.value} value={est.value}>
+                                                {est.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
-                        )}
+
+                            {/* Fecha de publicación */}
+                            <div className="form-group">
+                                <label className="form-label" htmlFor="fecha_publicacion">
+                                    Fecha de Publicación Programada
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    id="fecha_publicacion"
+                                    name="fecha_publicacion"
+                                    className="form-input"
+                                    value={formData.fecha_publicacion}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="modal-footer">

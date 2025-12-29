@@ -124,6 +124,19 @@ export async function generarImagen(params) {
 }
 
 /**
+ * Confirma una imagen generada y la sube a R2
+ * @param {Object} params - Parámetros
+ * @param {string} params.url_temporal - URL temporal de OpenAI (requerido)
+ * @param {string} params.prompt - Prompt usado para la imagen
+ */
+export async function confirmarYSubirImagen(params) {
+    return apiRequest('/ia/confirmar-imagen', {
+        method: 'POST',
+        body: JSON.stringify(params),
+    });
+}
+
+/**
  * Genera múltiples variaciones de imagen
  * @param {Object} params - Parámetros
  * @param {string} params.prompt - Prompt base (requerido)
@@ -162,6 +175,7 @@ export default {
     mejorarTexto,
     generarPromptImagen,
     generarImagen,
+    confirmarYSubirImagen,
     generarVariacionesImagen,
     getImagenesPorContenido,
     eliminarImagen,

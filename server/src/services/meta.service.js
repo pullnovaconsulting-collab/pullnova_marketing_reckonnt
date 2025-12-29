@@ -205,6 +205,9 @@ export const publishToFacebook = async (pageId, pageAccessToken, content) => {
             ? { url: content.image_url, message: content.message, access_token: pageAccessToken }
             : { message: content.message, access_token: pageAccessToken };
 
+        console.log(`[MetaService] Publicando en Facebook. Endpoint: ${endpoint}`);
+        console.log(`[MetaService] Payload:`, JSON.stringify({ ...body, access_token: '***' }, null, 2));
+
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -214,8 +217,11 @@ export const publishToFacebook = async (pageId, pageAccessToken, content) => {
         const data = await response.json();
 
         if (data.error) {
+            console.error(`[MetaService] ❌ Error de Facebook API:`, data.error);
             throw new Error(data.error.message);
         }
+
+        console.log(`[MetaService] ✅ Publicación exitosa en Facebook ID: ${data.id || data.post_id}`);
 
         return {
             success: true,
@@ -223,6 +229,7 @@ export const publishToFacebook = async (pageId, pageAccessToken, content) => {
             platform: 'facebook'
         };
     } catch (error) {
+        console.error(`[MetaService] ❌ Error en publishToFacebook:`, error.message);
         return {
             success: false,
             error: error.message,
@@ -240,6 +247,9 @@ export const publishToFacebook = async (pageId, pageAccessToken, content) => {
  */
 export const publishToInstagram = async (igAccountId, accessToken, content) => {
     try {
+        console.log(`[MetaService] Publicando en Instagram. Cuenta: ${igAccountId}`);
+        console.log(`[MetaService] Imagen: ${content.image_url}`);
+
         // Paso 1: Crear contenedor de media
         const containerResponse = await fetch(
             `${META_GRAPH_URL}/${igAccountId}/media`,
@@ -257,8 +267,11 @@ export const publishToInstagram = async (igAccountId, accessToken, content) => {
         const containerData = await containerResponse.json();
 
         if (containerData.error) {
+            console.error(`[MetaService] ❌ Error creando contenedor IG:`, containerData.error);
             throw new Error(containerData.error.message);
         }
+
+        console.log(`[MetaService] ✅ Contenedor IG creado: ${containerData.id}`);
 
         // Paso 2: Publicar el contenedor
         const publishResponse = await fetch(
@@ -276,8 +289,11 @@ export const publishToInstagram = async (igAccountId, accessToken, content) => {
         const publishData = await publishResponse.json();
 
         if (publishData.error) {
+            console.error(`[MetaService] ❌ Error publicando contenedor IG:`, publishData.error);
             throw new Error(publishData.error.message);
         }
+
+        console.log(`[MetaService] ✅ Publicación exitosa en Instagram ID: ${publishData.id}`);
 
         return {
             success: true,
@@ -285,6 +301,7 @@ export const publishToInstagram = async (igAccountId, accessToken, content) => {
             platform: 'instagram'
         };
     } catch (error) {
+        console.error(`[MetaService] ❌ Error en publishToInstagram:`, error.message);
         return {
             success: false,
             error: error.message,

@@ -76,7 +76,7 @@ router.post('/generar-prompt-imagen', IAController.generarPromptImagen);
 
 /**
  * @route POST /api/ia/generar-imagen
- * @description Generar imagen real con DALL-E 3
+ * @description Generar imagen real con DALL-E 3 (sin subir a R2 para preview)
  * @access Editor+
  * @body {string} prompt - Prompt para la imagen (requerido)
  * @body {number} contenido_id - ID del contenido a asociar (opcional)
@@ -85,6 +85,15 @@ router.post('/generar-prompt-imagen', IAController.generarPromptImagen);
  * @body {string} style - vivid|natural
  */
 router.post('/generar-imagen', IAController.generarImagen);
+
+/**
+ * @route POST /api/ia/confirmar-imagen
+ * @description Confirmar imagen generada y subir a R2
+ * @access Editor+
+ * @body {string} url_temporal - URL temporal de OpenAI (requerido)
+ * @body {string} prompt - Prompt usado para la imagen
+ */
+router.post('/confirmar-imagen', IAController.confirmarImagen);
 
 /**
  * @route POST /api/ia/generar-variaciones-imagen

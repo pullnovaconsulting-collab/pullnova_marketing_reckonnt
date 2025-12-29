@@ -8,6 +8,7 @@ import * as ContenidoModel from '../models/contenido.model.js';
 import * as CampanasModel from '../models/campanas.model.js';
 import * as PublicacionesModel from '../models/publicaciones.model.js';
 import * as CuentasSocialesModel from '../models/cuentasSociales.model.js';
+import * as ImagenesModel from '../models/imagenes.model.js';
 import { sendSuccess, sendError, paginate, paginatedResponse, validateRequired } from '../utils/helpers.js';
 
 /**
@@ -120,7 +121,8 @@ export const create = async (req, res) => {
     try {
         const {
             campana_id, titulo, contenido, copy_texto,
-            tipo, plataforma, estado, prompt_usado, modelo_ia, fecha_publicacion
+            tipo, plataforma, estado, prompt_usado, modelo_ia, fecha_publicacion,
+            imagen_url, imagen_prompt  // Nuevos campos para imagen de IA
         } = req.body;
 
         // Validar campos requeridos
@@ -168,6 +170,30 @@ export const create = async (req, res) => {
             fecha_publicacion,
             created_by: req.user.id
         });
+
+        console.log('[CONTENIDO] Nuevo contenido creado ID:', nuevoContenido.id);
+        console.log('[CONTENIDO] imagen_url recibida:', imagen_url);
+        console.log('[CONTENIDO] imagen_prompt recibida:', imagen_prompt);
+
+        // Si se proporcionó una imagen, crear registro en tabla imagenes
+        if (imagen_url) {
+            console.log('[IMAGEN] ✅ Iniciando creación de registro de imagen...');
+            try {
+                const imagenCreada = await ImagenesModel.create({
+                    contenido_id: nuevoContenido.id,
+                    url_imagen: imagen_url,
+                    prompt_imagen: imagen_prompt || 'Imagen generada con IA',
+                    modelo_ia: modelo_ia || 'dall-e-3'
+                });
+                console.log('[IMAGEN] ✅ Registro creado exitosamente:', imagenCreada);
+            } catch (imgError) {
+                console.error('[IMAGEN] ❌ Error creando registro:', imgError);
+                console.error('[IMAGEN] Stack trace:', imgError.stack);
+                // No fallar la creación del contenido si falla la imagen
+            }
+        } else {
+            console.log('[IMAGEN] ⚠️ No se recibió imagen_url');
+        }
 
         // Intentar programar automáticamente
         await handleScheduling(nuevoContenido);

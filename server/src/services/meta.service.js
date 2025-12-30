@@ -202,7 +202,7 @@ export const publishToFacebook = async (pageId, pageAccessToken, content) => {
             : `${META_GRAPH_URL}/${pageId}/feed`;
 
         const body = content.image_url
-            ? { url: content.image_url, message: content.message, access_token: pageAccessToken }
+            ? { url: content.image_url, caption: content.message, access_token: pageAccessToken }
             : { message: content.message, access_token: pageAccessToken };
 
         console.log(`[MetaService] Publicando en Facebook. Endpoint: ${endpoint}`);

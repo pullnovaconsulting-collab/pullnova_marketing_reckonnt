@@ -16,8 +16,7 @@ const TIPOS = [
 const PLATAFORMAS = [
     { value: 'instagram', label: 'Instagram', icon: '📸' },
     { value: 'facebook', label: 'Facebook', icon: '📘' },
-    { value: 'linkedin', label: 'LinkedIn', icon: '💼' },
-    { value: 'twitter', label: 'Twitter/X', icon: '🐦' }
+    { value: 'linkedin', label: 'LinkedIn', icon: '💼' }
 ];
 
 const ESTADOS = [
@@ -39,7 +38,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
         contenido: '',
         tipo: 'post',
         plataforma: 'instagram',
-        estado: 'pendiente',
+        estado: 'programado',
         campana_id: '',
         fecha_publicacion: '',
         prompt_usado: '',
@@ -104,7 +103,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                 contenido: '',
                 tipo: 'post',
                 plataforma: 'instagram',
-                estado: 'pendiente',
+                estado: 'programado',
                 campana_id: '',
                 fecha_publicacion: '',
                 prompt_usado: '',
@@ -414,7 +413,6 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                                                                 <option value="instagram">Instagram</option>
                                                                 <option value="facebook">Facebook</option>
                                                                 <option value="linkedin">LinkedIn</option>
-                                                                <option value="twitter">Twitter/X</option>
                                                             </select>
                                                         </div>
                                                         <div className="form-group">

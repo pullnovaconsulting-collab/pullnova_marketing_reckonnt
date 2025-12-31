@@ -314,6 +314,40 @@ export const confirmarImagen = async (req, res) => {
 };
 
 /**
+ * Sube una imagen procesada (desde el editor) a R2
+ * @route POST /api/ia/upload-processed-image
+ */
+export const uploadProcessedImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return sendError(res, 'No se ha subido ninguna imagen', 400);
+        }
+
+        const buffer = req.file.buffer;
+        const filename = `processed-${Date.now()}-${Math.round(Math.random() * 1E9)}.png`;
+        
+        // Subir a R2 usando el servicio de storage existente
+        // Importamos dinámicamente o usamos el servicio ya importado si tiene el método
+        // En este archivo ya importamos StorageService en otros controladores?
+        // No, pero DalleService usa StorageService. 
+        // Vamos a importar StorageService directamente aquí también.
+        
+        // Nota: Necesitamos importar StorageService al inicio del archivo si no está
+        const r2Url = await import('../services/storage.service.js').then(m => 
+            m.uploadImage(buffer, filename, req.file.mimetype)
+        );
+
+        return sendSuccess(res, {
+            url_imagen: r2Url,
+            filename: filename
+        }, 'Imagen procesada subida exitosamente');
+    } catch (error) {
+        console.error('Error en uploadProcessedImage:', error);
+        return sendError(res, 'Error subiendo imagen procesada', 500);
+    }
+};
+
+/**
  * Genera variaciones de imagen
  * @route POST /api/ia/generar-variaciones-imagen
  */
@@ -416,5 +450,36 @@ export const getStatus = async (req, res) => {
         }, 'Estado de servicios IA');
     } catch (error) {
         return sendError(res, 'Error verificando estado', 500);
+    }
+};
+
+/**
+ * Proxy para imágenes (para evitar CORS)
+ * @route GET /api/ia/proxy-image
+ */
+export const proxyImage = async (req, res) => {
+    try {
+        const { url } = req.query;
+        if (!url) {
+            return res.status(400).send('URL requerida');
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            return res.status(response.status).send('Error fetching image');
+        }
+
+        // Copiar headers relevantes
+        res.setHeader('Content-Type', response.headers.get('content-type'));
+        res.setHeader('Access-Control-Allow-Origin', '*'); // Permitir CORS
+
+        // Pipe del stream
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        res.send(buffer);
+
+    } catch (error) {
+        console.error('Error en proxyImage:', error);
+        res.status(500).send('Error proxying image');
     }
 };

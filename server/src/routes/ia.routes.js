@@ -96,6 +96,15 @@ router.post('/generar-imagen', IAController.generarImagen);
 router.post('/confirmar-imagen', IAController.confirmarImagen);
 
 /**
+ * @route POST /api/ia/upload-processed-image
+ * @description Subir imagen procesada (editada) a R2
+ * @access Editor+
+ * @body multipart/form-data: image
+ */
+import { upload } from '../middlewares/upload.middleware.js';
+router.post('/upload-processed-image', upload.single('image'), IAController.uploadProcessedImage);
+
+/**
  * @route POST /api/ia/generar-variaciones-imagen
  * @description Generar múltiples variaciones de imagen
  * @access Editor+
@@ -118,5 +127,14 @@ router.get('/imagenes/:contenidoId', IAController.getImagenesPorContenido);
  * @access Admin
  */
 router.delete('/imagenes/:id', isAdmin, IAController.eliminarImagen);
+
+router.delete('/imagenes/:id', isAdmin, IAController.eliminarImagen);
+
+/**
+ * @route GET /api/ia/proxy-image
+ * @description Proxy para imágenes externas (evitar CORS)
+ * @access Editor+
+ */
+router.get('/proxy-image', IAController.proxyImage);
 
 export default router;

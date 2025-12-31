@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as iaApi from '../../services/iaApi';
+import ImageTemplateEditor from './ImageTemplateEditor';
 
 export default function PostTab({ 
     formData, 
@@ -43,6 +44,42 @@ export default function PostTab({
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [confirmingImage, setConfirmingImage] = useState(false);
+
+    // Estado para edición de plantilla
+    const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+    const [baseImageForEditing, setBaseImageForEditing] = useState(null);
+
+    const handleOpenEditor = () => {
+        if (imagePreview?.url_temporal) {
+            setBaseImageForEditing(imagePreview.url_temporal);
+            setShowTemplateEditor(true);
+        }
+    };
+
+    const handleSaveProcessedImage = async (formData) => {
+        try {
+            setConfirmingImage(true);
+            const res = await iaApi.uploadProcessedImage(formData);
+            
+            const r2Url = res.data.url_imagen;
+            const prompt = imagePreview.prompt_revisado || imagePreview.prompt_original;
+            
+            setConfirmedImageUrl(r2Url);
+            setConfirmedImagePrompt(prompt);
+            
+            // Limpiar estados
+            setImagePreview(null);
+            setShowTemplateEditor(false);
+            setBaseImageForEditing(null);
+            
+            setAiSuccess('Imagen procesada y guardada exitosamente');
+            setTimeout(() => setAiSuccess(null), 3000);
+        } catch (err) {
+            setAiError(err.message || 'Error guardando imagen procesada');
+        } finally {
+            setConfirmingImage(false);
+        }
+    };
 
     // ========== Funciones de IA - Texto ==========
     const handleGenerarCopy = async () => {
@@ -445,39 +482,64 @@ export default function PostTab({
                                 {generatingImage ? '⏳ Generando imagen...' : '🎨 Generar Imagen'}
                             </button>
 
-                            {/* Preview de imagen generada */}
-                            {imagePreview && (
-                                <div className="image-preview-container">
-                                    <h4 className="image-preview-title">Vista Previa de Imagen</h4>
-                                    <img
-                                        src={imagePreview.url_temporal}
-                                        alt="Preview"
-                                        className="image-preview"
-                                    />
-                                    {imagePreview.prompt_revisado && (
-                                        <p className="image-preview-prompt">
-                                            <strong>Prompt revisado:</strong> {imagePreview.prompt_revisado}
-                                        </p>
-                                    )}
-                                    <div className="image-preview-actions">
-                                        <button
-                                            type="button"
-                                            className="btn-success"
-                                            onClick={handleConfirmarImagen}
-                                            disabled={confirmingImage}
-                                        >
-                                            {confirmingImage ? '⏳ Guardando...' : '✓ Confirmar y Usar'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn-danger"
-                                            onClick={handleRechazarImagen}
-                                            disabled={confirmingImage}
-                                        >
-                                            × Descartar
-                                        </button>
+
+
+                            {/* Editor de Plantilla */}
+                            {showTemplateEditor && baseImageForEditing ? (
+                                <ImageTemplateEditor
+                                    imageUrl={baseImageForEditing}
+                                    onSave={handleSaveProcessedImage}
+                                    onCancel={() => setShowTemplateEditor(false)}
+                                    initialData={{
+                                        title: 'RECKY EASY',
+                                        description: 'Sistema Administrativo',
+                                        body: '$35,64'
+                                    }}
+                                />
+                            ) : (
+                                /* Preview de imagen generada */
+                                imagePreview && (
+                                    <div className="image-preview-container">
+                                        <h4 className="image-preview-title">Vista Previa de Imagen</h4>
+                                        <img
+                                            src={imagePreview.url_temporal}
+                                            alt="Preview"
+                                            className="image-preview"
+                                        />
+                                        {imagePreview.prompt_revisado && (
+                                            <p className="image-preview-prompt">
+                                                <strong>Prompt revisado:</strong> {imagePreview.prompt_revisado}
+                                            </p>
+                                        )}
+                                        <div className="image-preview-actions">
+                                            <button
+                                                type="button"
+                                                className="btn-success"
+                                                onClick={handleConfirmarImagen}
+                                                disabled={confirmingImage}
+                                            >
+                                                {confirmingImage ? '⏳ Guardando...' : '✓ Usar Original'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn-primary"
+                                                onClick={handleOpenEditor}
+                                                disabled={confirmingImage}
+                                                style={{ backgroundColor: '#4F46E5' }}
+                                            >
+                                                🎨 Personalizar con Plantilla
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn-danger"
+                                                onClick={handleRechazarImagen}
+                                                disabled={confirmingImage}
+                                            >
+                                                × Descartar
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                )
                             )}
                         </div>
                     </div>

@@ -1,20 +1,29 @@
 import { useState, useEffect, useRef } from 'react';
-import reactLogo from '../../assets/react.svg'; // Placeholder logo
+import reckonntLogo from '../../assets/logo-reckonnt.png';
 
-export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initialData = {} }) {
+export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initialData = {}, palette }) {
     const canvasRef = useRef(null);
     const [title, setTitle] = useState(initialData.title || '');
     const [description, setDescription] = useState(initialData.description || '');
     const [body, setBody] = useState(initialData.body || '');
     const [isSaving, setIsSaving] = useState(false);
     
-    // Configuración de estilo
+    // Configuración de estilo basada en la paleta seleccionada
     const [config, setConfig] = useState({
-        titleColor: '#FFFFFF',
-        titleBgColor: '#4F46E5', // Indigo 600
-        textColor: '#1F2937', // Gray 800
-        logoPosition: 'bottom-left'
+        primaryColor: palette?.colors?.primary || '#1e3a8a',
+        secondaryColor: palette?.colors?.secondary || '#3b82f6',
+        textColor: palette?.colors?.text || '#ffffff',
     });
+
+    useEffect(() => {
+        if (palette) {
+            setConfig({
+                primaryColor: palette.colors.primary,
+                secondaryColor: palette.colors.secondary,
+                textColor: palette.colors.text,
+            });
+        }
+    }, [palette]);
 
     // Cargar y dibujar en el canvas
     useEffect(() => {
@@ -23,14 +32,12 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
 
         const ctx = canvas.getContext('2d');
         const img = new Image();
-        img.crossOrigin = "anonymous"; // Importante para evitar taint canvas
+        img.crossOrigin = "anonymous";
         
-        // Usar proxy si es una URL externa (OpenAI)
         const token = localStorage.getItem('token');
         const isExternal = imageUrl.startsWith('http') && !imageUrl.includes(window.location.origin);
         
         if (isExternal) {
-            // Agregar token para autenticación en el proxy
             const proxyUrl = `/api/ia/proxy-image?url=${encodeURIComponent(imageUrl)}&token=${token}`;
             img.src = proxyUrl;
         } else {
@@ -38,59 +45,64 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
         }
 
         img.onload = () => {
-            // Configurar tamaño del canvas igual a la imagen
             canvas.width = img.width;
             canvas.height = img.height;
 
             // 1. Dibujar imagen base
             ctx.drawImage(img, 0, 0);
 
-            // 2. Dibujar Título (Fondo + Texto)
+            // 2. Título y Descripción (Top Right, Sin fondo)
+            ctx.textAlign = 'right';
+            
+            // Título
             if (title) {
-                const fontSize = Math.floor(canvas.width * 0.06); // 6% del ancho
-                ctx.font = `bold ${fontSize}px sans-serif`;
-                const padding = fontSize * 0.5;
-                const textWidth = ctx.measureText(title).width;
-                
-                // Fondo del título (Esquina superior derecha o centrada)
-                const bgX = canvas.width - textWidth - (padding * 3);
-                const bgY = fontSize;
-                const bgWidth = textWidth + (padding * 2);
-                const bgHeight = fontSize + padding;
-                const radius = 20;
-
-                // Dibujar fondo redondeado
-                ctx.fillStyle = config.titleBgColor;
-                ctx.beginPath();
-                ctx.roundRect(bgX, bgY, bgWidth, bgHeight, radius);
-                ctx.fill();
-
-                // Texto del título
-                ctx.fillStyle = config.titleColor;
-                ctx.fillText(title, bgX + padding, bgY + fontSize * 0.85);
+                const titleFontSize = Math.floor(canvas.width * 0.08); // Grande
+                ctx.font = `bold ${titleFontSize}px sans-serif`;
+                ctx.fillStyle = config.primaryColor; // Usar color de paleta
+                ctx.shadowColor = "rgba(255, 255, 255, 0.8)"; // Sombra blanca para contraste
+                ctx.shadowBlur = 10;
+                ctx.fillText(title, canvas.width - 40, titleFontSize + 40);
+                ctx.shadowBlur = 0;
             }
 
-            // 3. Dibujar Descripción (Debajo del título o en otra zona)
+            // Descripción
             if (description) {
-                const fontSize = Math.floor(canvas.width * 0.04);
-                ctx.font = `${fontSize}px sans-serif`;
-                ctx.fillStyle = '#FFFFFF';
-                // Sombra para legibilidad
-                ctx.shadowColor = "black";
-                ctx.shadowBlur = 7;
-                ctx.fillText(description, canvas.width * 0.05, canvas.height * 0.1);
-                ctx.shadowBlur = 0; // Reset
+                const descFontSize = Math.floor(canvas.width * 0.04); // Más pequeño
+                ctx.font = `${descFontSize}px sans-serif`;
+                ctx.fillStyle = config.secondaryColor;
+                ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+                ctx.shadowBlur = 10;
+                // Posicionar debajo del título
+                const titleHeight = title ? Math.floor(canvas.width * 0.08) : 0;
+                ctx.fillText(description, canvas.width - 40, titleHeight + descFontSize + 60);
+                ctx.shadowBlur = 0;
             }
+            ctx.textAlign = 'left'; // Reset
 
-            // 4. Dibujar Cuerpo (Caja blanca flotante)
+            // 3. Cuerpo (Centro Derecha, Caja con fondo, Lista)
             if (body) {
-                const boxWidth = canvas.width * 0.4;
-                const boxHeight = canvas.height * 0.3;
-                const boxX = canvas.width - boxWidth - 40;
-                const boxY = canvas.height / 2 - boxHeight / 2;
+                const lines = body.split('\n').slice(0, 3); // Máximo 3 líneas
+                const fontSize = Math.floor(canvas.width * 0.045); // Aumentado de 0.035 a 0.045
+                const padding = 50; // Aumentado de 40 a 50
+                const lineHeight = fontSize * 1.5;
                 
-                // Caja blanca
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                // Calcular dimensiones de la caja
+                ctx.font = `${fontSize}px sans-serif`;
+                let maxWidth = 0;
+                lines.forEach(line => {
+                    const width = ctx.measureText(line).width;
+                    if (width > maxWidth) maxWidth = width;
+                });
+                
+                const boxWidth = maxWidth + (padding * 2);
+                const boxHeight = (lines.length * lineHeight) + padding;
+                
+                // Posición: Centrado verticalmente, Alineado a la derecha
+                const boxX = canvas.width - boxWidth - 40; // Margen derecho de 40px
+                const boxY = (canvas.height - boxHeight) / 2;
+
+                // Dibujar caja
+                ctx.fillStyle = config.primaryColor;
                 ctx.shadowColor = "rgba(0,0,0,0.3)";
                 ctx.shadowBlur = 15;
                 ctx.beginPath();
@@ -98,26 +110,29 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
-                // Texto del cuerpo
+                // Dibujar texto (lista)
                 ctx.fillStyle = config.textColor;
-                const fontSize = Math.floor(boxWidth * 0.15); // Grande para el precio/dato
-                ctx.font = `bold ${fontSize}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.fillText(body, boxX + boxWidth/2, boxY + boxHeight/2 + fontSize/3);
-                ctx.textAlign = 'left'; // Reset
+                lines.forEach((line, index) => {
+                    ctx.fillText(line, boxX + padding, boxY + padding + (index * lineHeight));
+                });
             }
 
-            // 5. Dibujar Logo
+            // 4. Logo (Bottom Right, Pequeño)
             const logo = new Image();
-            logo.src = reactLogo;
+            logo.src = reckonntLogo;
             logo.onload = () => {
-                const logoWidth = canvas.width * 0.25; // 25% del ancho
+                const logoWidth = canvas.width * 0.15; // 15% del ancho
                 const logoHeight = (logo.height / logo.width) * logoWidth;
                 
-                let logoX = 20;
-                let logoY = canvas.height - logoHeight - 20;
+                // Alineado a la derecha
+                const logoX = canvas.width - logoWidth - 40;
+                const logoY = canvas.height - logoHeight - 40;
 
+                // Sombra suave para el logo
+                ctx.shadowColor = "rgba(0,0,0,0.3)";
+                ctx.shadowBlur = 10;
                 ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+                ctx.shadowBlur = 0;
             };
         };
     }, [imageUrl, title, description, body, config]);
@@ -126,21 +141,12 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
         setIsSaving(true);
         try {
             const canvas = canvasRef.current;
-            
-            // Convertir a Blob
             canvas.toBlob(async (blob) => {
-                if (!blob) {
-                    throw new Error('Error al generar la imagen');
-                }
-
-                // Crear FormData
+                if (!blob) throw new Error('Error al generar la imagen');
                 const formData = new FormData();
                 formData.append('image', blob, 'processed-image.png');
-
-                // Llamar a la función de guardado del padre
                 await onSave(formData);
             }, 'image/png');
-            
         } catch (error) {
             console.error('Error guardando imagen:', error);
             setIsSaving(false);
@@ -154,14 +160,15 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
             gap: '1.5rem',
             marginTop: '1rem',
             padding: '1rem',
-            border: '1px solid #e5e7eb',
+            border: '1px solid var(--border-color)', // Usar variable CSS
             borderRadius: '0.5rem',
-            backgroundColor: '#f9fafb'
+            backgroundColor: 'var(--bg-secondary)', // Usar variable CSS para dark mode
+            color: 'var(--text-primary)'
         }}>
             <div className="editor-preview" style={{ 
                 display: 'flex', 
                 justifyContent: 'center',
-                backgroundColor: '#e5e7eb',
+                backgroundColor: 'var(--bg-tertiary)', // Fondo oscuro para preview
                 padding: '1rem',
                 borderRadius: '0.5rem',
                 minHeight: '300px'
@@ -172,16 +179,16 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
                         maxWidth: '100%', 
                         maxHeight: '500px',
                         height: 'auto', 
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }} 
                 />
             </div>
             
             <div className="editor-controls">
-                <h3>Personalizar Plantilla</h3>
+                <h3 style={{ color: 'var(--text-primary)' }}>Personalizar Plantilla</h3>
                 
                 <div className="form-group">
-                    <label className="form-label">Título (Etiqueta superior)</label>
+                    <label className="form-label">Título (Superior Derecha)</label>
                     <input 
                         type="text" 
                         className="form-input"
@@ -192,7 +199,7 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">Descripción (Texto superior)</label>
+                    <label className="form-label">Descripción (Bajo el Título)</label>
                     <input 
                         type="text" 
                         className="form-input"
@@ -203,13 +210,13 @@ export default function ImageTemplateEditor({ imageUrl, onSave, onCancel, initia
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">Dato Destacado (Caja central)</label>
-                    <input 
-                        type="text" 
-                        className="form-input"
+                    <label className="form-label">Lista Central (Una línea por ítem)</label>
+                    <textarea 
+                        className="form-input form-textarea"
                         value={body}
                         onChange={(e) => setBody(e.target.value)}
-                        placeholder="Ej: $35,64"
+                        placeholder="• Ítem 1&#10;• Ítem 2&#10;• Ítem 3"
+                        rows={3}
                     />
                 </div>
 

@@ -40,7 +40,8 @@ export default function PostTab({
         colores: 'azules y blancos corporativos',
         size: '1024x1024',
         quality: 'standard',
-        style: 'vivid'
+        style: 'vivid',
+        selectedPalette: { id: 'blue', name: 'Azul Corporativo', colors: { primary: '#1e3a8a', secondary: '#3b82f6', text: '#ffffff' } }
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [confirmingImage, setConfirmingImage] = useState(false);
@@ -158,7 +159,11 @@ export default function PostTab({
             });
 
             const generatedPrompt = res.data.prompt || res.data.contenido || res.data.prompt_imagen || '';
-            setImagenForm(prev => ({ ...prev, prompt: generatedPrompt }));
+            
+            // Agregar instrucción de posicionamiento para la plantilla
+            const promptWithLayout = `${generatedPrompt}. IMPORTANTE: La imagen debe tener una composición asimétrica. El sujeto principal o elemento focal debe estar ubicado EXCLUSIVAMENTE en el tercio IZQUIERDO de la imagen. El lado DERECHO debe quedar vacío, con un fondo limpio, desenfocado o neutro, para permitir la superposición de texto.`;
+            
+            setImagenForm(prev => ({ ...prev, prompt: promptWithLayout }));
             setAiSuccess('Prompt generado');
             setTimeout(() => setAiSuccess(null), 3000);
         } catch (err) {
@@ -436,6 +441,37 @@ export default function PostTab({
                                 />
                             </div>
 
+                            <div className="form-group">
+                                <label className="form-label">Paleta de Colores</label>
+                                <div className="color-palettes" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                    {[
+                                        { id: 'blue', name: 'Azul Corporativo', colors: { primary: '#1e3a8a', secondary: '#3b82f6', text: '#ffffff' }, label: '🔵 Azul' },
+                                        { id: 'violet', name: 'Violeta Vibrante', colors: { primary: '#5b21b6', secondary: '#8b5cf6', text: '#ffffff' }, label: '🟣 Violeta' },
+                                        { id: 'red', name: 'Vino Elegante', colors: { primary: '#881337', secondary: '#be123c', text: '#ffffff' }, label: '🔴 Vino' }
+                                    ].map(palette => (
+                                        <button
+                                            key={palette.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setImagenForm(prev => ({ ...prev, colores: palette.name, selectedPalette: palette }));
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                padding: '0.5rem',
+                                                border: imagenForm.selectedPalette?.id === palette.id ? '2px solid var(--primary-color)' : '1px solid #ddd',
+                                                borderRadius: '0.5rem',
+                                                backgroundColor: palette.colors.primary,
+                                                color: 'white',
+                                                cursor: 'pointer',
+                                                opacity: imagenForm.selectedPalette?.id === palette.id ? 1 : 0.7
+                                            }}
+                                        >
+                                            {palette.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="form-row">
                                 <div className="form-group">
                                     <label className="form-label">Tamaño</label>
@@ -490,10 +526,11 @@ export default function PostTab({
                                     imageUrl={baseImageForEditing}
                                     onSave={handleSaveProcessedImage}
                                     onCancel={() => setShowTemplateEditor(false)}
+                                    palette={imagenForm.selectedPalette}
                                     initialData={{
                                         title: 'RECKY EASY',
                                         description: 'Sistema Administrativo',
-                                        body: '$35,64'
+                                        body: '• Gestión Total\n• Facturación\n• Reportes'
                                     }}
                                 />
                             ) : (

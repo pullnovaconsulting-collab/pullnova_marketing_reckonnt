@@ -242,6 +242,49 @@ export default function PostTab({
         setTimeout(() => setAiSuccess(null), 2000);
     };
 
+    // Estado para fuente de imagen
+    const [imageSource, setImageSource] = useState('ai'); // 'ai' | 'manual'
+    const [manualFile, setManualFile] = useState(null);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setManualFile(file);
+            const objectUrl = URL.createObjectURL(file);
+            setImagePreview({
+                url_temporal: objectUrl,
+                prompt_revisado: 'Imagen subida manualmente',
+                prompt_original: 'Manual upload'
+            });
+        }
+    };
+
+    const handleConfirmarManual = async () => {
+        if (!manualFile) return;
+
+        try {
+            setConfirmingImage(true);
+            setAiError(null);
+
+            const formData = new FormData();
+            formData.append('image', manualFile);
+
+            const res = await iaApi.uploadProcessedImage(formData);
+            
+            setConfirmedImageUrl(res.data.url_imagen);
+            setConfirmedImagePrompt('Imagen subida manualmente');
+            setImagePreview(null);
+            setManualFile(null);
+            
+            setAiSuccess('Imagen subida exitosamente');
+            setTimeout(() => setAiSuccess(null), 3000);
+        } catch (err) {
+            setAiError(err.message || 'Error subiendo imagen');
+        } finally {
+            setConfirmingImage(false);
+        }
+    };
+
     return (
         <>
             {/* Generador de Texto con IA */}
@@ -396,129 +439,193 @@ export default function PostTab({
                 </div>
             </div>
 
-            {/* Generador de Imagen con IA */}
+            {/* Sección de Imagen (IA o Manual) */}
             <div className="ai-section">
                 <button
                     type="button"
                     className="ai-section-toggle"
                     onClick={() => setShowImageAI(!showImageAI)}
                 >
-                    {showImageAI ? '▼' : '▶'} 🎨 Generar Imagen con IA
+                    {showImageAI ? '▼' : '▶'} 🖼️ Imagen del Post
                 </button>
 
                 {showImageAI && (
                     <div className="ai-section-content">
+                        <div className="ai-mode-tabs">
+                            <button
+                                type="button"
+                                className={`ai-mode-tab ${imageSource === 'ai' ? 'active' : ''}`}
+                                onClick={() => setImageSource('ai')}
+                            >
+                                🎨 Generar con IA
+                            </button>
+                            <button
+                                type="button"
+                                className={`ai-mode-tab ${imageSource === 'manual' ? 'active' : ''}`}
+                                onClick={() => setImageSource('manual')}
+                            >
+                                📤 Subir Imagen
+                            </button>
+                        </div>
+
                         <div className="ai-form">
-                            <div className="form-group">
-                                <label className="form-label">Descripción de la imagen</label>
-                                <textarea
-                                    className="form-input form-textarea"
-                                    value={imagenForm.descripcion}
-                                    onChange={(e) => setImagenForm(prev => ({ ...prev, descripcion: e.target.value }))}
-                                    placeholder="Describe qué imagen quieres crear..."
-                                    rows={2}
-                                />
-                            </div>
+                            {imageSource === 'ai' ? (
+                                <>
+                                    <div className="form-group">
+                                        <label className="form-label">Descripción de la imagen</label>
+                                        <textarea
+                                            className="form-input form-textarea"
+                                            value={imagenForm.descripcion}
+                                            onChange={(e) => setImagenForm(prev => ({ ...prev, descripcion: e.target.value }))}
+                                            placeholder="Describe qué imagen quieres crear..."
+                                            rows={2}
+                                        />
+                                    </div>
 
-                            <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={handleGenerarPrompt}
-                                disabled={generatingImage || !imagenForm.descripcion.trim()}
-                                style={{ marginBottom: '1rem', width: '100%' }}
-                            >
-                                🪄 Generar Prompt Optimizado
-                            </button>
-
-                            <div className="form-group">
-                                <label className="form-label">Prompt para DALL-E *</label>
-                                <textarea
-                                    className="form-input form-textarea"
-                                    value={imagenForm.prompt}
-                                    onChange={(e) => setImagenForm(prev => ({ ...prev, prompt: e.target.value }))}
-                                    placeholder="Prompt optimizado para la generación de imagen..."
-                                    rows={3}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Paleta de Colores</label>
-                                <div className="color-palettes" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                    {[
-                                        { id: 'blue', name: 'Azul Corporativo', colors: { primary: '#1e3a8a', secondary: '#3b82f6', text: '#ffffff' }, label: '🔵 Azul' },
-                                        { id: 'violet', name: 'Violeta Vibrante', colors: { primary: '#5b21b6', secondary: '#8b5cf6', text: '#ffffff' }, label: '🟣 Violeta' },
-                                        { id: 'red', name: 'Vino Elegante', colors: { primary: '#881337', secondary: '#be123c', text: '#ffffff' }, label: '🔴 Vino' }
-                                    ].map(palette => (
-                                        <button
-                                            key={palette.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setImagenForm(prev => ({ ...prev, colores: palette.name, selectedPalette: palette }));
-                                            }}
-                                            style={{
-                                                flex: 1,
-                                                padding: '0.5rem',
-                                                border: imagenForm.selectedPalette?.id === palette.id ? '2px solid var(--primary-color)' : '1px solid #ddd',
-                                                borderRadius: '0.5rem',
-                                                backgroundColor: palette.colors.primary,
-                                                color: 'white',
-                                                cursor: 'pointer',
-                                                opacity: imagenForm.selectedPalette?.id === palette.id ? 1 : 0.7
-                                            }}
-                                        >
-                                            {palette.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label className="form-label">Tamaño</label>
-                                    <select
-                                        className="form-select"
-                                        value={imagenForm.size}
-                                        onChange={(e) => setImagenForm(prev => ({ ...prev, size: e.target.value }))}
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={handleGenerarPrompt}
+                                        disabled={generatingImage || !imagenForm.descripcion.trim()}
+                                        style={{ marginBottom: '1rem', width: '100%' }}
                                     >
-                                        <option value="1024x1024">1024x1024 (Cuadrado)</option>
-                                        <option value="1792x1024">1792x1024 (Horizontal)</option>
-                                        <option value="1024x1792">1024x1792 (Vertical)</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Calidad</label>
-                                    <select
-                                        className="form-select"
-                                        value={imagenForm.quality}
-                                        onChange={(e) => setImagenForm(prev => ({ ...prev, quality: e.target.value }))}
+                                        🪄 Generar Prompt Optimizado
+                                    </button>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Prompt para DALL-E *</label>
+                                        <textarea
+                                            className="form-input form-textarea"
+                                            value={imagenForm.prompt}
+                                            onChange={(e) => setImagenForm(prev => ({ ...prev, prompt: e.target.value }))}
+                                            placeholder="Prompt optimizado para la generación de imagen..."
+                                            rows={3}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Paleta de Colores</label>
+                                        <div className="color-palettes" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                            {[
+                                                { id: 'blue', name: 'Azul Corporativo', colors: { primary: '#1e3a8a', secondary: '#3b82f6', text: '#ffffff' }, label: '🔵 Azul' },
+                                                { id: 'violet', name: 'Violeta Vibrante', colors: { primary: '#5b21b6', secondary: '#8b5cf6', text: '#ffffff' }, label: '🟣 Violeta' },
+                                                { id: 'red', name: 'Vino Elegante', colors: { primary: '#881337', secondary: '#be123c', text: '#ffffff' }, label: '🔴 Vino' }
+                                            ].map(palette => (
+                                                <button
+                                                    key={palette.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setImagenForm(prev => ({ ...prev, colores: palette.name, selectedPalette: palette }));
+                                                    }}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '0.5rem',
+                                                        border: imagenForm.selectedPalette?.id === palette.id ? '2px solid var(--primary-color)' : '1px solid #ddd',
+                                                        borderRadius: '0.5rem',
+                                                        backgroundColor: palette.colors.primary,
+                                                        color: 'white',
+                                                        cursor: 'pointer',
+                                                        opacity: imagenForm.selectedPalette?.id === palette.id ? 1 : 0.7
+                                                    }}
+                                                >
+                                                    {palette.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label className="form-label">Tamaño</label>
+                                            <select
+                                                className="form-select"
+                                                value={imagenForm.size}
+                                                onChange={(e) => setImagenForm(prev => ({ ...prev, size: e.target.value }))}
+                                            >
+                                                <option value="1024x1024">1024x1024 (Cuadrado)</option>
+                                                <option value="1792x1024">1792x1024 (Horizontal)</option>
+                                                <option value="1024x1792">1024x1792 (Vertical)</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Calidad</label>
+                                            <select
+                                                className="form-select"
+                                                value={imagenForm.quality}
+                                                onChange={(e) => setImagenForm(prev => ({ ...prev, quality: e.target.value }))}
+                                            >
+                                                <option value="standard">Standard</option>
+                                                <option value="hd">HD</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Estilo</label>
+                                            <select
+                                                className="form-select"
+                                                value={imagenForm.style}
+                                                onChange={(e) => setImagenForm(prev => ({ ...prev, style: e.target.value }))}
+                                            >
+                                                <option value="vivid">Vivid</option>
+                                                <option value="natural">Natural</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="btn-primary"
+                                        onClick={handleGenerarImagen}
+                                        disabled={generatingImage || !imagenForm.prompt.trim()}
                                     >
-                                        <option value="standard">Standard</option>
-                                        <option value="hd">HD</option>
-                                    </select>
+                                        {generatingImage ? '⏳ Generando imagen...' : '🎨 Generar Imagen'}
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="manual-upload-section">
+                                    <div className="form-group">
+                                        <label className="form-label">Subir Imagen desde Dispositivo</label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                            className="form-input"
+                                            style={{ padding: '1rem' }}
+                                        />
+                                    </div>
+                                    
+                                    {/* Paleta de colores también disponible para manual */}
+                                    <div className="form-group">
+                                        <label className="form-label">Paleta de Colores (para plantilla)</label>
+                                        <div className="color-palettes" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                            {[
+                                                { id: 'blue', name: 'Azul Corporativo', colors: { primary: '#1e3a8a', secondary: '#3b82f6', text: '#ffffff' }, label: '🔵 Azul' },
+                                                { id: 'violet', name: 'Violeta Vibrante', colors: { primary: '#5b21b6', secondary: '#8b5cf6', text: '#ffffff' }, label: '🟣 Violeta' },
+                                                { id: 'red', name: 'Vino Elegante', colors: { primary: '#881337', secondary: '#be123c', text: '#ffffff' }, label: '🔴 Vino' }
+                                            ].map(palette => (
+                                                <button
+                                                    key={palette.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setImagenForm(prev => ({ ...prev, colores: palette.name, selectedPalette: palette }));
+                                                    }}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '0.5rem',
+                                                        border: imagenForm.selectedPalette?.id === palette.id ? '2px solid var(--primary-color)' : '1px solid #ddd',
+                                                        borderRadius: '0.5rem',
+                                                        backgroundColor: palette.colors.primary,
+                                                        color: 'white',
+                                                        cursor: 'pointer',
+                                                        opacity: imagenForm.selectedPalette?.id === palette.id ? 1 : 0.7
+                                                    }}
+                                                >
+                                                    {palette.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label className="form-label">Estilo</label>
-                                    <select
-                                        className="form-select"
-                                        value={imagenForm.style}
-                                        onChange={(e) => setImagenForm(prev => ({ ...prev, style: e.target.value }))}
-                                    >
-                                        <option value="vivid">Vivid</option>
-                                        <option value="natural">Natural</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                className="btn-primary"
-                                onClick={handleGenerarImagen}
-                                disabled={generatingImage || !imagenForm.prompt.trim()}
-                            >
-                                {generatingImage ? '⏳ Generando imagen...' : '🎨 Generar Imagen'}
-                            </button>
-
-
+                            )}
 
                             {/* Editor de Plantilla */}
                             {showTemplateEditor && baseImageForEditing ? (
@@ -534,16 +641,18 @@ export default function PostTab({
                                     }}
                                 />
                             ) : (
-                                /* Preview de imagen generada */
+                                /* Preview de imagen (Generada o Subida) */
                                 imagePreview && (
                                     <div className="image-preview-container">
-                                        <h4 className="image-preview-title">Vista Previa de Imagen</h4>
+                                        <h4 className="image-preview-title">
+                                            {imageSource === 'ai' ? 'Vista Previa de Imagen Generada' : 'Vista Previa de Imagen Subida'}
+                                        </h4>
                                         <img
                                             src={imagePreview.url_temporal}
                                             alt="Preview"
                                             className="image-preview"
                                         />
-                                        {imagePreview.prompt_revisado && (
+                                        {imagePreview.prompt_revisado && imageSource === 'ai' && (
                                             <p className="image-preview-prompt">
                                                 <strong>Prompt revisado:</strong> {imagePreview.prompt_revisado}
                                             </p>
@@ -552,7 +661,7 @@ export default function PostTab({
                                             <button
                                                 type="button"
                                                 className="btn-success"
-                                                onClick={handleConfirmarImagen}
+                                                onClick={imageSource === 'ai' ? handleConfirmarImagen : handleConfirmarManual}
                                                 disabled={confirmingImage}
                                             >
                                                 {confirmingImage ? '⏳ Guardando...' : '✓ Usar Original'}

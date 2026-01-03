@@ -17,7 +17,6 @@ const TIPO_ICONS = {
     post: '📝',
     imagen: '🖼️',
     video: '🎬',
-    carrusel: '📚',
     story: '📱'
 };
 
@@ -299,7 +298,6 @@ export default function ContenidoPage() {
                             <option value="post">Post</option>
                             <option value="imagen">Imagen</option>
                             <option value="video">Video</option>
-                            <option value="carrusel">Carrusel</option>
                             <option value="story">Story</option>
                         </select>
                     </div>

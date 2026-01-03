@@ -6,13 +6,11 @@
 import { useState, useEffect } from 'react';
 import PostTab from './contenido/PostTab';
 import VideoTab from './contenido/VideoTab';
-import CarruselTab from './contenido/CarruselTab';
 import StoryTab from './contenido/StoryTab';
 
 const TIPOS = [
     { value: 'post', label: 'Post', icon: '📝' },
     { value: 'video', label: 'Video', icon: '🎬' },
-    { value: 'carrusel', label: 'Carrusel', icon: '📚' },
     { value: 'story', label: 'Story', icon: '📱' }
 ];
 
@@ -203,7 +201,6 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                         )}
 
                         {activeTab === 'video' && <VideoTab />}
-                        {activeTab === 'carrusel' && <CarruselTab />}
                         {activeTab === 'story' && <StoryTab />}
 
                         {/* Campos comunes a todos los tipos */}

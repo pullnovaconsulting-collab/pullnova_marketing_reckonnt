@@ -588,37 +588,7 @@ export default function PostTab({
                                         />
                                     </div>
                                     
-                                    {/* Paleta de colores también disponible para manual */}
-                                    <div className="form-group">
-                                        <label className="form-label">Paleta de Colores (para plantilla)</label>
-                                        <div className="color-palettes" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                            {[
-                                                { id: 'blue', name: 'Azul Corporativo', colors: { primary: '#1e3a8a', secondary: '#3b82f6', text: '#ffffff' }, label: '🔵 Azul' },
-                                                { id: 'violet', name: 'Violeta Vibrante', colors: { primary: '#5b21b6', secondary: '#8b5cf6', text: '#ffffff' }, label: '🟣 Violeta' },
-                                                { id: 'red', name: 'Vino Elegante', colors: { primary: '#881337', secondary: '#be123c', text: '#ffffff' }, label: '🔴 Vino' }
-                                            ].map(palette => (
-                                                <button
-                                                    key={palette.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setImagenForm(prev => ({ ...prev, colores: palette.name, selectedPalette: palette }));
-                                                    }}
-                                                    style={{
-                                                        flex: 1,
-                                                        padding: '0.5rem',
-                                                        border: imagenForm.selectedPalette?.id === palette.id ? '2px solid var(--primary-color)' : '1px solid #ddd',
-                                                        borderRadius: '0.5rem',
-                                                        backgroundColor: palette.colors.primary,
-                                                        color: 'white',
-                                                        cursor: 'pointer',
-                                                        opacity: imagenForm.selectedPalette?.id === palette.id ? 1 : 0.7
-                                                    }}
-                                                >
-                                                    {palette.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    {/* Paleta de colores eliminada de la sección manual según requerimiento */}
                                 </div>
                             )}
 

@@ -195,18 +195,115 @@ export const getInstagramAccount = async (pageId, pageAccessToken) => {
  * @param {Object} content - Contenido a publicar
  * @returns {Promise<Object>} Resultado de publicación
  */
+/**
+ * Verifica el estado del contenedor de media de Instagram
+ * @param {string} containerId - ID del contenedor
+ * @param {string} accessToken - Token de acceso
+ * @returns {Promise<boolean>} True si está listo, False si falló
+ */
+const checkContainerStatus = async (containerId, accessToken) => {
+    let attempts = 0;
+    const maxAttempts = 10;
+    const delay = 2000; // 2 segundos
+
+    while (attempts < maxAttempts) {
+        try {
+            const response = await fetch(
+                `${META_GRAPH_URL}/${containerId}?fields=status_code,status&access_token=${accessToken}`
+            );
+            const data = await response.json();
+
+            if (data.error) {
+                console.error(`[MetaService] ❌ Error verificando estado:`, data.error);
+                return false;
+            }
+
+            console.log(`[MetaService] Estado contenedor ${containerId}: ${data.status_code} (${data.status})`);
+
+            if (data.status_code === 'FINISHED') {
+                return true;
+            }
+
+            if (data.status_code === 'ERROR') {
+                console.error(`[MetaService] ❌ El contenedor falló al procesarse`);
+                return false;
+            }
+
+            // Esperar antes del siguiente intento
+            await new Promise(resolve => setTimeout(resolve, delay));
+            attempts++;
+        } catch (error) {
+            console.error(`[MetaService] Error en checkContainerStatus:`, error);
+            return false;
+        }
+    }
+
+    console.error(`[MetaService] ❌ Timeout esperando a que el contenedor esté listo`);
+    return false;
+};
+
+/**
+ * Publica contenido en una página de Facebook
+ * @param {string} pageId - ID de la página
+ * @param {string} pageAccessToken - Token de la página
+ * @param {Object} content - Contenido a publicar (message, image_url, images array)
+ * @returns {Promise<Object>} Resultado de publicación
+ */
 export const publishToFacebook = async (pageId, pageAccessToken, content) => {
     try {
-        const endpoint = content.image_url
+        // Caso 1: Múltiples imágenes (Carrusel / Álbum)
+        if (content.images && content.images.length > 1) {
+            console.log(`[MetaService] Publicando álbum en Facebook con ${content.images.length} imágenes`);
+            
+            const mediaIds = [];
+            
+            // Subir cada imagen sin publicar
+            for (const imageUrl of content.images) {
+                const photoResponse = await fetch(`${META_GRAPH_URL}/${pageId}/photos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: imageUrl,
+                        published: false,
+                        access_token: pageAccessToken
+                    })
+                });
+                
+                const photoData = await photoResponse.json();
+                if (photoData.error) throw new Error(photoData.error.message);
+                mediaIds.push(photoData.id);
+            }
+
+            // Crear post con las imágenes adjuntas
+            const feedResponse = await fetch(`${META_GRAPH_URL}/${pageId}/feed`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: content.message,
+                    attached_media: mediaIds.map(id => ({ media_fbid: id })),
+                    access_token: pageAccessToken
+                })
+            });
+
+            const feedData = await feedResponse.json();
+            if (feedData.error) throw new Error(feedData.error.message);
+
+            console.log(`[MetaService] ✅ Álbum publicado exitosamente en Facebook ID: ${feedData.id}`);
+            return { success: true, post_id: feedData.id, platform: 'facebook' };
+        }
+
+        // Caso 2: Una sola imagen o solo texto
+        const imageUrl = content.image_url || (content.images && content.images[0]);
+        
+        const endpoint = imageUrl
             ? `${META_GRAPH_URL}/${pageId}/photos`
             : `${META_GRAPH_URL}/${pageId}/feed`;
 
-        const body = content.image_url
-            ? { url: content.image_url, caption: content.message, access_token: pageAccessToken }
+        const body = imageUrl
+            ? { url: imageUrl, caption: content.message, access_token: pageAccessToken }
             : { message: content.message, access_token: pageAccessToken };
 
         console.log(`[MetaService] Publicando en Facebook. Endpoint: ${endpoint}`);
-        console.log(`[MetaService] Payload:`, JSON.stringify({ ...body, access_token: '***' }, null, 2));
 
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -242,45 +339,99 @@ export const publishToFacebook = async (pageId, pageAccessToken, content) => {
  * Publica contenido en Instagram
  * @param {string} igAccountId - ID de cuenta de Instagram
  * @param {string} accessToken - Token de acceso
- * @param {Object} content - Contenido a publicar
+ * @param {Object} content - Contenido a publicar (caption, image_url, images array)
  * @returns {Promise<Object>} Resultado de publicación
  */
 export const publishToInstagram = async (igAccountId, accessToken, content) => {
     try {
         console.log(`[MetaService] Publicando en Instagram. Cuenta: ${igAccountId}`);
-        console.log(`[MetaService] Imagen: ${content.image_url}`);
+        
+        // Normalizar imágenes
+        const images = content.images && content.images.length > 0 
+            ? content.images 
+            : (content.image_url ? [content.image_url] : []);
 
-        // Paso 1: Crear contenedor de media
-        const containerResponse = await fetch(
-            `${META_GRAPH_URL}/${igAccountId}/media`,
-            {
+        if (images.length === 0) {
+            throw new Error('Instagram requiere al menos una imagen');
+        }
+
+        let creationId;
+
+        // Caso 1: Carrusel (Múltiples imágenes)
+        if (images.length > 1) {
+            console.log(`[MetaService] Creando carrusel de Instagram con ${images.length} imágenes`);
+            const itemIds = [];
+
+            // Crear contenedores para cada imagen
+            for (const imageUrl of images) {
+                const itemResponse = await fetch(`${META_GRAPH_URL}/${igAccountId}/media`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_url: imageUrl,
+                        is_carousel_item: true,
+                        access_token: accessToken
+                    })
+                });
+                
+                const itemData = await itemResponse.json();
+                if (itemData.error) throw new Error(itemData.error.message);
+                itemIds.push(itemData.id);
+            }
+
+            // Crear contenedor del carrusel
+            const carouselResponse = await fetch(`${META_GRAPH_URL}/${igAccountId}/media`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    image_url: content.image_url,
+                    media_type: 'CAROUSEL',
                     caption: content.caption,
+                    children: itemIds,
                     access_token: accessToken
                 })
-            }
-        );
+            });
 
-        const containerData = await containerResponse.json();
+            const carouselData = await carouselResponse.json();
+            if (carouselData.error) throw new Error(carouselData.error.message);
+            creationId = carouselData.id;
 
-        if (containerData.error) {
-            console.error(`[MetaService] ❌ Error creando contenedor IG:`, containerData.error);
-            throw new Error(containerData.error.message);
+        } else {
+            // Caso 2: Imagen única
+            console.log(`[MetaService] Creando post de imagen única`);
+            const containerResponse = await fetch(
+                `${META_GRAPH_URL}/${igAccountId}/media`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_url: images[0],
+                        caption: content.caption,
+                        access_token: accessToken
+                    })
+                }
+            );
+
+            const containerData = await containerResponse.json();
+            if (containerData.error) throw new Error(containerData.error.message);
+            creationId = containerData.id;
         }
 
-        console.log(`[MetaService] ✅ Contenedor IG creado: ${containerData.id}`);
+        console.log(`[MetaService] ✅ Contenedor creado: ${creationId}. Verificando estado...`);
 
-        // Paso 2: Publicar el contenedor
+        // Verificar estado antes de publicar
+        const isReady = await checkContainerStatus(creationId, accessToken);
+        if (!isReady) {
+            throw new Error('El contenedor multimedia no estuvo listo a tiempo');
+        }
+
+        // Publicar el contenedor
         const publishResponse = await fetch(
             `${META_GRAPH_URL}/${igAccountId}/media_publish`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    creation_id: containerData.id,
+                    creation_id: creationId,
                     access_token: accessToken
                 })
             }

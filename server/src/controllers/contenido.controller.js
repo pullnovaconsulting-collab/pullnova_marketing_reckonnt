@@ -175,9 +175,27 @@ export const create = async (req, res) => {
         console.log('[CONTENIDO] imagen_url recibida:', imagen_url);
         console.log('[CONTENIDO] imagen_prompt recibida:', imagen_prompt);
 
-        // Si se proporcionó una imagen, crear registro en tabla imagenes
-        if (imagen_url) {
-            console.log('[IMAGEN] ✅ Iniciando creación de registro de imagen...');
+        // Si se proporcionó un array de imágenes, crear registros
+        if (req.body.imagenes && Array.isArray(req.body.imagenes) && req.body.imagenes.length > 0) {
+            console.log(`[IMAGEN] ✅ Procesando ${req.body.imagenes.length} imágenes...`);
+            
+            for (const img of req.body.imagenes) {
+                try {
+                    await ImagenesModel.create({
+                        contenido_id: nuevoContenido.id,
+                        url_imagen: img.url,
+                        prompt_imagen: img.prompt || 'Imagen generada con IA',
+                        modelo_ia: modelo_ia || 'dall-e-3'
+                    });
+                    console.log('[IMAGEN] ✅ Imagen registrada:', img.url);
+                } catch (imgError) {
+                    console.error('[IMAGEN] ❌ Error registrando imagen:', imgError);
+                }
+            }
+        } 
+        // Backward compatibility: Si se proporcionó una sola imagen (imagen_url)
+        else if (imagen_url) {
+            console.log('[IMAGEN] ✅ Iniciando creación de registro de imagen única...');
             try {
                 const imagenCreada = await ImagenesModel.create({
                     contenido_id: nuevoContenido.id,
@@ -192,7 +210,7 @@ export const create = async (req, res) => {
                 // No fallar la creación del contenido si falla la imagen
             }
         } else {
-            console.log('[IMAGEN] ⚠️ No se recibió imagen_url');
+            console.log('[IMAGEN] ⚠️ No se recibieron imágenes');
         }
 
         // Intentar programar automáticamente

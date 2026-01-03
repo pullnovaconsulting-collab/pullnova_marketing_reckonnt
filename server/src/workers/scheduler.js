@@ -133,11 +133,13 @@ const publicarEnPlataforma = async (publicacion) => {
 
     // Obtener imágenes asociadas al contenido
     let imageUrl = null;
+    let images = [];
     try {
         const imagenes = await ImagenesModel.getByContenido(contenido_id);
         if (imagenes && imagenes.length > 0) {
             imageUrl = imagenes[0].url_imagen;
-            console.log(`[Scheduler] Imagen encontrada para contenido ${contenido_id}: ${imageUrl}`);
+            images = imagenes.map(img => img.url_imagen);
+            console.log(`[Scheduler] ${images.length} imágenes encontradas para contenido ${contenido_id}`);
         }
     } catch (error) {
         console.error(`[Scheduler] Error obteniendo imágenes para contenido ${contenido_id}:`, error);
@@ -147,16 +149,18 @@ const publicarEnPlataforma = async (publicacion) => {
         case 'facebook':
             return await MetaService.publishToFacebook(page_id, access_token, { 
                 message: texto,
-                image_url: imageUrl 
+                image_url: imageUrl,
+                images: images
             });
 
         case 'instagram':
-            if (!imageUrl) {
+            if (!imageUrl && images.length === 0) {
                 return { success: false, error: 'Instagram requiere una imagen para publicar' };
             }
             return await MetaService.publishToInstagram(page_id, access_token, {
                 caption: texto,
-                image_url: imageUrl
+                image_url: imageUrl,
+                images: images
             });
 
         case 'linkedin':

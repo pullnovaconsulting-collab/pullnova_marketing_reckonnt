@@ -10,10 +10,8 @@ export default function PostTab({
     setAiError, 
     aiSuccess, 
     setAiSuccess,
-    confirmedImageUrl,
-    setConfirmedImageUrl,
-    confirmedImagePrompt,
-    setConfirmedImagePrompt
+    confirmedImages,
+    setConfirmedImages
 }) {
     // Estados de IA - Generación de texto
     const [showTextAI, setShowTextAI] = useState(false);
@@ -65,8 +63,7 @@ export default function PostTab({
             const r2Url = res.data.url_imagen;
             const prompt = imagePreview.prompt_revisado || imagePreview.prompt_original;
             
-            setConfirmedImageUrl(r2Url);
-            setConfirmedImagePrompt(prompt);
+            setConfirmedImages(prev => [...prev, { url: r2Url, prompt: prompt }]);
             
             // Limpiar estados
             setImagePreview(null);
@@ -223,8 +220,7 @@ export default function PostTab({
             const r2Url = res.data.url_imagen;
             const prompt = imagePreview.prompt_revisado || imagePreview.prompt_original;
             
-            setConfirmedImageUrl(r2Url);
-            setConfirmedImagePrompt(prompt);
+            setConfirmedImages(prev => [...prev, { url: r2Url, prompt: prompt }]);
             setImagePreview(null);
             
             setAiSuccess('Imagen confirmada - Se asociará al guardar el contenido');
@@ -271,8 +267,7 @@ export default function PostTab({
 
             const res = await iaApi.uploadProcessedImage(formData);
             
-            setConfirmedImageUrl(res.data.url_imagen);
-            setConfirmedImagePrompt('Imagen subida manualmente');
+            setConfirmedImages(prev => [...prev, { url: res.data.url_imagen, prompt: 'Imagen subida manualmente' }]);
             setImagePreview(null);
             setManualFile(null);
             
@@ -692,27 +687,40 @@ export default function PostTab({
                 )}
             </div>
 
-            {/* Imagen confirmada o URL manual */}
-            {confirmedImageUrl ? (
+            {/* Galería de imágenes confirmadas */}
+            {confirmedImages.length > 0 ? (
                 <div className="form-group">
-                    <label className="form-label">Imagen Confirmada dle Post</label>
-                    <div className="confirmed-image-preview">
-                        <img src={confirmedImageUrl} alt="Imagen confirmada" />
-                        <div className="confirmed-image-info">
-                            <p><strong>✓ Imagen lista para publicar</strong></p>
-                            <p className="confirmed-image-url">{confirmedImageUrl}</p>
-                            <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={() => {
-                                    setConfirmedImageUrl(null);
-                                    setConfirmedImagePrompt(null);
-                                }}
-                                style={{ marginTop: '0.5rem' }}
-                            >
-                                × Quitar Imagen
-                            </button>
-                        </div>
+                    <label className="form-label">Imágenes del Post ({confirmedImages.length})</label>
+                    <div className="confirmed-images-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                        {confirmedImages.map((img, index) => (
+                            <div key={index} className="confirmed-image-card" style={{ position: 'relative', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+                                <img src={img.url} alt={`Imagen ${index + 1}`} style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setConfirmedImages(prev => prev.filter((_, i) => i !== index));
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '5px',
+                                        right: '5px',
+                                        background: 'rgba(255, 0, 0, 0.8)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        width: '24px',
+                                        height: '24px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '14px'
+                                    }}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
             ) : (

@@ -50,8 +50,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
     const [errors, setErrors] = useState({});
 
     // Estados de IA compartidos/confirmados
-    const [confirmedImageUrl, setConfirmedImageUrl] = useState(null);
-    const [confirmedImagePrompt, setConfirmedImagePrompt] = useState(null);
+    const [confirmedImages, setConfirmedImages] = useState([]); // Array de { url, prompt }
     const [aiError, setAiError] = useState(null);
     const [aiSuccess, setAiSuccess] = useState(null);
 
@@ -86,8 +85,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
             setActiveTab('post');
         }
         setErrors({});
-        setConfirmedImageUrl(null);
-        setConfirmedImagePrompt(null);
+        setConfirmedImages([]);
         setAiError(null);
         setAiSuccess(null);
     }, [contenido, isOpen]);
@@ -119,10 +117,12 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
             fecha_publicacion: formData.fecha_publicacion || null
         };
 
-        // Si hay una imagen confirmada, agregarla a los datos
-        if (confirmedImageUrl) {
-            dataToSave.imagen_url = confirmedImageUrl;
-            dataToSave.imagen_prompt = confirmedImagePrompt;
+        // Si hay imágenes confirmadas, agregarlas a los datos
+        if (confirmedImages.length > 0) {
+            dataToSave.imagenes = confirmedImages;
+            // Backward compatibility (opcional, usa la primera imagen)
+            dataToSave.imagen_url = confirmedImages[0].url;
+            dataToSave.imagen_prompt = confirmedImages[0].prompt;
         }
 
         // Limpiar campos vacíos (excepto campana_id e imagen_url)
@@ -197,10 +197,8 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                                 setAiError={setAiError}
                                 aiSuccess={aiSuccess}
                                 setAiSuccess={setAiSuccess}
-                                confirmedImageUrl={confirmedImageUrl}
-                                setConfirmedImageUrl={setConfirmedImageUrl}
-                                confirmedImagePrompt={confirmedImagePrompt}
-                                setConfirmedImagePrompt={setConfirmedImagePrompt}
+                                confirmedImages={confirmedImages}
+                                setConfirmedImages={setConfirmedImages}
                             />
                         )}
 

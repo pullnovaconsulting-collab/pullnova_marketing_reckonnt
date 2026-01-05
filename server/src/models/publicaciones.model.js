@@ -142,6 +142,7 @@ export const getPendientesParaPublicar = async () => {
                c.copy_texto,
                c.contenido as contenido_texto,
                c.plataforma,
+               c.tipo,
                cs.nombre_cuenta,
                cs.page_id,
                cs.access_token,

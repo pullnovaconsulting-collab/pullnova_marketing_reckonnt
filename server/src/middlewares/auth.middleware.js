@@ -15,18 +15,23 @@ import { pool } from '../config/db.js';
  */
 export const verifyToken = async (req, res, next) => {
     try {
-        // Obtener el token del header Authorization
+        // Obtener el token del header Authorization o query param
+        let token;
         const authHeader = req.headers.authorization;
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                status: 'error',
-                message: 'Token no proporcionado. Formato: Bearer <token>'
-            });
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } else if (req.query.token) {
+            // Soporte para token en query param (útil para imágenes/proxy)
+            token = req.query.token;
         }
 
-        // Extraer el token
-        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({
+                status: 'error',
+                message: 'Token no proporcionado. Formato: Bearer <token> o ?token=<token>'
+            });
+        }
 
         // Verificar el token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

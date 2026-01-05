@@ -124,6 +124,44 @@ export async function generarImagen(params) {
 }
 
 /**
+ * Confirma una imagen generada y la sube a R2
+ * @param {Object} params - Parámetros
+ * @param {string} params.url_temporal - URL temporal de OpenAI (requerido)
+ * @param {string} params.prompt - Prompt usado para la imagen
+ */
+export async function confirmarYSubirImagen(params) {
+    return apiRequest('/ia/confirmar-imagen', {
+        method: 'POST',
+        body: JSON.stringify(params),
+    });
+}
+
+/**
+ * Sube una imagen procesada (editada) a R2
+ * @param {FormData} formData - FormData con la imagen
+ */
+export async function uploadProcessedImage(formData) {
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`${API_BASE}/ia/upload-processed-image`, {
+        method: 'POST',
+        headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+            // No Content-Type header needed for FormData, fetch sets it automatically with boundary
+        },
+        body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message || 'Error subiendo imagen procesada');
+    }
+
+    return data;
+}
+
+/**
  * Genera múltiples variaciones de imagen
  * @param {Object} params - Parámetros
  * @param {string} params.prompt - Prompt base (requerido)
@@ -162,6 +200,8 @@ export default {
     mejorarTexto,
     generarPromptImagen,
     generarImagen,
+    confirmarYSubirImagen,
+    uploadProcessedImage,
     generarVariacionesImagen,
     getImagenesPorContenido,
     eliminarImagen,

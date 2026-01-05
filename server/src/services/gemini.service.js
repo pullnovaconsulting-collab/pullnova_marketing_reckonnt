@@ -272,6 +272,8 @@ REQUISITOS:
 4. Terminar con un CTA claro
 5. Mantener el tono ${tono}
 
+IMPORTANTE: Responde ÚNICAMENTE con el contenido del post. No incluyas explicaciones, introducciones, ni repitas estas instrucciones en tu respuesta.
+
 ${variaciones > 1 ? 'Numera cada variación claramente.' : ''}
 `;
 

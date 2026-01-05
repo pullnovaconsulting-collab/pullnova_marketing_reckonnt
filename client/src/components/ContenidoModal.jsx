@@ -1,21 +1,23 @@
 /**
- * @fileoverview Modal de Contenido
- * @description Componente modal para crear/editar contenido de marketing
+ * @fileoverview Modal de Contenido con IA Integrada
+ * @description Componente modal para crear/editar contenido con funcionalidades de IA
  */
 
 import { useState, useEffect } from 'react';
+import PostTab from './contenido/PostTab';
+import VideoTab from './contenido/VideoTab';
+import StoryTab from './contenido/StoryTab';
 
 const TIPOS = [
     { value: 'post', label: 'Post', icon: '📝' },
-    { value: 'imagen', label: 'Imagen', icon: '🖼️' },
+    { value: 'video', label: 'Video', icon: '🎬' },
     { value: 'story', label: 'Story', icon: '📱' }
 ];
 
 const PLATAFORMAS = [
     { value: 'instagram', label: 'Instagram', icon: '📸' },
     { value: 'facebook', label: 'Facebook', icon: '📘' },
-    { value: 'linkedin', label: 'LinkedIn', icon: '💼' },
-    { value: 'twitter', label: 'Twitter/X', icon: '🐦' }
+    { value: 'linkedin', label: 'LinkedIn', icon: '💼' }
 ];
 
 const ESTADOS = [
@@ -29,20 +31,26 @@ const ESTADOS = [
 export default function ContenidoModal({ isOpen, onClose, onSave, contenido, campanas = [], loading }) {
     const isEditing = !!contenido;
 
+    // Estados del formulario principal
+    const [activeTab, setActiveTab] = useState('post');
     const [formData, setFormData] = useState({
         titulo: '',
         copy_texto: '',
         contenido: '',
         tipo: 'post',
         plataforma: 'instagram',
-        estado: 'pendiente',
+        estado: 'programado',
         campana_id: '',
         fecha_publicacion: '',
         prompt_usado: '',
         modelo_ia: ''
     });
     const [errors, setErrors] = useState({});
-    const [showAdvanced, setShowAdvanced] = useState(false);
+
+    // Estados de IA compartidos/confirmados
+    const [confirmedImages, setConfirmedImages] = useState([]); // Array de { url, prompt }
+    const [aiError, setAiError] = useState(null);
+    const [aiSuccess, setAiSuccess] = useState(null);
 
     useEffect(() => {
         if (contenido) {
@@ -58,9 +66,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                 prompt_usado: contenido.prompt_usado || '',
                 modelo_ia: contenido.modelo_ia || ''
             });
-            if (contenido.prompt_usado || contenido.modelo_ia) {
-                setShowAdvanced(true);
-            }
+            setActiveTab(contenido.tipo || 'post');
         } else {
             setFormData({
                 titulo: '',
@@ -68,15 +74,18 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                 contenido: '',
                 tipo: 'post',
                 plataforma: 'instagram',
-                estado: 'pendiente',
+                estado: 'programado',
                 campana_id: '',
                 fecha_publicacion: '',
                 prompt_usado: '',
                 modelo_ia: ''
             });
-            setShowAdvanced(false);
+            setActiveTab('post');
         }
         setErrors({});
+        setConfirmedImages([]);
+        setAiError(null);
+        setAiSuccess(null);
     }, [contenido, isOpen]);
 
     const handleChange = (e) => {
@@ -89,18 +98,15 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
 
     const validate = () => {
         const newErrors = {};
-
         if (!formData.titulo.trim()) {
             newErrors.titulo = 'El título es requerido';
         }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
         if (!validate()) return;
 
         const dataToSave = {
@@ -109,10 +115,18 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
             fecha_publicacion: formData.fecha_publicacion || null
         };
 
-        // Limpiar campos vacíos
+        // Si hay imágenes confirmadas, agregarlas a los datos
+        if (confirmedImages.length > 0) {
+            dataToSave.imagenes = confirmedImages;
+            // Backward compatibility (opcional, usa la primera imagen)
+            dataToSave.imagen_url = confirmedImages[0].url;
+            dataToSave.imagen_prompt = confirmedImages[0].prompt;
+        }
+
+        // Limpiar campos vacíos (excepto campana_id e imagen_url)
         Object.keys(dataToSave).forEach(key => {
             if (dataToSave[key] === '' || dataToSave[key] === null) {
-                if (key !== 'campana_id') delete dataToSave[key];
+                if (key !== 'campana_id' && key !== 'imagen_url') delete dataToSave[key];
             }
         });
 
@@ -123,73 +137,77 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+            <div className="modal modal-xl" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 className="modal-title">
-                        {isEditing ? '📝 Editar Contenido' : '📝 Nuevo Contenido'}
+                        {isEditing ? '📝 Editar Contenido' : '✨ Generar Contenido con IA'}
                     </h2>
                     <button className="modal-close" onClick={onClose}>×</button>
                 </div>
 
+                {/* Tabs de tipo de contenido */}
+                <div className="content-tabs">
+                    {TIPOS.map(tipo => (
+                        <button
+                            key={tipo.value}
+                            type="button"
+                            className={`content-tab ${formData.tipo === tipo.value ? 'active' : ''}`}
+                            onClick={() => {
+                                setFormData(prev => ({ ...prev, tipo: tipo.value }));
+                                setActiveTab(tipo.value);
+                            }}
+                        >
+                            <span>{tipo.icon}</span>
+                            <span>{tipo.label}</span>
+                        </button>
+                    ))}
+                </div>
+
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
+                        {/* Alertas de IA */}
+                        {aiSuccess && <div className="alert alert-success">✓ {aiSuccess}</div>}
+                        {aiError && <div className="alert alert-error">⚠️ {aiError}</div>}
+
                         {/* Título */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="titulo">
-                                Título *
-                            </label>
-                            <input
-                                type="text"
-                                id="titulo"
-                                name="titulo"
-                                className="form-input"
-                                value={formData.titulo}
-                                onChange={handleChange}
-                                placeholder="Título del contenido"
-                            />
-                            {errors.titulo && <span className="form-error">{errors.titulo}</span>}
-                        </div>
-
-                        {/* Copy / Texto principal */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="copy_texto">
-                                Texto del Post
-                            </label>
-                            <textarea
-                                id="copy_texto"
-                                name="copy_texto"
-                                className="form-input form-textarea"
-                                value={formData.copy_texto}
-                                onChange={handleChange}
-                                placeholder="Escribe el copy para la publicación..."
-                                rows={4}
-                            />
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                {formData.copy_texto.length} caracteres
-                            </div>
-                        </div>
-
-                        {/* Tipo y Plataforma */}
-                        <div className="form-row">
                             <div className="form-group">
-                                <label className="form-label">Tipo de Contenido</label>
-                                <div className="chips-row">
-                                    {TIPOS.map(tipo => (
-                                        <button
-                                            key={tipo.value}
-                                            type="button"
-                                            className={`chip-btn ${formData.tipo === tipo.value ? 'active' : ''}`}
-                                            onClick={() => setFormData(prev => ({ ...prev, tipo: tipo.value }))}
-                                        >
-                                            <span>{tipo.icon}</span>
-                                            <span>{tipo.label}</span>
-                                        </button>
-                                    ))}
-                                </div>
+                                <label className="form-label" htmlFor="titulo">
+                                    Título *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="titulo"
+                                    name="titulo"
+                                    className="form-input"
+                                    value={formData.titulo}
+                                    onChange={handleChange}
+                                    placeholder="Título del contenido"
+                                />
+                                {errors.titulo && <span className="form-error">{errors.titulo}</span>}
                             </div>
-                        </div>
+                        {/* Renderizado dinámico de pestañas */}
+                        {activeTab === 'post' && (
+                            <PostTab 
+                                formData={formData}
+                                handleChange={handleChange}
+                                setFormData={setFormData}
+                                aiError={aiError}
+                                setAiError={setAiError}
+                                aiSuccess={aiSuccess}
+                                setAiSuccess={setAiSuccess}
+                                confirmedImages={confirmedImages}
+                                setConfirmedImages={setConfirmedImages}
+                            />
+                        )}
 
-                        <div className="form-row">
+                        {activeTab === 'video' && <VideoTab />}
+                        {activeTab === 'story' && <StoryTab />}
+
+                        {/* Campos comunes a todos los tipos */}
+                        <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                            
+
+                            {/* Plataforma */}
                             <div className="form-group">
                                 <label className="form-label">Plataforma</label>
                                 <div className="chips-row">
@@ -206,107 +224,63 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                                     ))}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Campaña y Estado */}
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label className="form-label" htmlFor="campana_id">
-                                    Campaña Asociada
-                                </label>
-                                <select
-                                    id="campana_id"
-                                    name="campana_id"
-                                    className="form-select"
-                                    value={formData.campana_id}
-                                    onChange={handleChange}
-                                >
-                                    <option value="">Sin campaña</option>
-                                    {campanas.map(camp => (
-                                        <option key={camp.id} value={camp.id}>
-                                            {camp.nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label" htmlFor="estado">
-                                    Estado
-                                </label>
-                                <select
-                                    id="estado"
-                                    name="estado"
-                                    className="form-select"
-                                    value={formData.estado}
-                                    onChange={handleChange}
-                                >
-                                    {ESTADOS.map(est => (
-                                        <option key={est.value} value={est.value}>
-                                            {est.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Fecha de publicación */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="fecha_publicacion">
-                                Fecha de Publicación Programada
-                            </label>
-                            <input
-                                type="datetime-local"
-                                id="fecha_publicacion"
-                                name="fecha_publicacion"
-                                className="form-input"
-                                value={formData.fecha_publicacion}
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        {/* Sección avanzada (IA) */}
-                        <div className="form-section-toggle">
-                            <button
-                                type="button"
-                                className="toggle-advanced-btn"
-                                onClick={() => setShowAdvanced(!showAdvanced)}
-                            >
-                                {showAdvanced ? '▼' : '▶'} Información de IA (opcional)
-                            </button>
-                        </div>
-
-                        {showAdvanced && (
-                            <div className="advanced-section">
+                            {/* Campaña y Estado */}
+                            <div className="form-row">
                                 <div className="form-group">
-                                    <label className="form-label" htmlFor="prompt_usado">
-                                        Prompt Usado
+                                    <label className="form-label" htmlFor="campana_id">
+                                        Campaña Asociada
                                     </label>
-                                    <textarea
-                                        id="prompt_usado"
-                                        name="prompt_usado"
-                                        className="form-input form-textarea"
-                                        value={formData.prompt_usado}
+                                    <select
+                                        id="campana_id"
+                                        name="campana_id"
+                                        className="form-select"
+                                        value={formData.campana_id}
                                         onChange={handleChange}
-                                        placeholder="Prompt utilizado para generar el contenido con IA..."
-                                        rows={2}
-                                    />
+                                    >
+                                        <option value="">Sin campaña</option>
+                                        {campanas.map(camp => (
+                                            <option key={camp.id} value={camp.id}>
+                                                {camp.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label" htmlFor="modelo_ia">
-                                        Modelo de IA
+                                    <label className="form-label" htmlFor="estado">
+                                        Estado
                                     </label>
-                                    <input
-                                        type="text"
-                                        id="modelo_ia"
-                                        name="modelo_ia"
-                                        className="form-input"
-                                        value={formData.modelo_ia}
+                                    <select
+                                        id="estado"
+                                        name="estado"
+                                        className="form-select"
+                                        value={formData.estado}
                                         onChange={handleChange}
-                                        placeholder="ej: gemini, gpt-4, dall-e-3"
-                                    />
+                                    >
+                                        {ESTADOS.map(est => (
+                                            <option key={est.value} value={est.value}>
+                                                {est.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
-                        )}
+
+                            {/* Fecha de publicación */}
+                            <div className="form-group">
+                                <label className="form-label" htmlFor="fecha_publicacion">
+                                    Fecha de Publicación Programada
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    id="fecha_publicacion"
+                                    name="fecha_publicacion"
+                                    className="form-input"
+                                    value={formData.fecha_publicacion}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="modal-footer">

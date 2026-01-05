@@ -143,10 +143,13 @@ export const callbackMeta = async (req, res) => {
         }
 
         // Redirigir a página de éxito en el frontend
-        return res.redirect('/social/success?platform=meta');
+        // Redirigir a página de éxito en el frontend
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_success=true&platform=meta`);
     } catch (error) {
         console.error('Error en callback Meta:', error);
-        return res.redirect('/social/error?message=Error procesando autenticación');
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_error=true&message=Error procesando autenticación`);
     }
 };
 
@@ -223,10 +226,12 @@ export const callbackLinkedIn = async (req, res) => {
             });
         }
 
-        return res.redirect('/social/success?platform=linkedin');
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_success=true&platform=linkedin`);
     } catch (error) {
         console.error('Error en callback LinkedIn:', error);
-        return res.redirect('/social/error?message=Error procesando autenticación');
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        return res.redirect(`${clientUrl}/?social_error=true&message=Error procesando autenticación`);
     }
 };
 
@@ -264,19 +269,36 @@ export const publicarContenido = async (req, res) => {
 
         let resultado;
 
+        console.log(`[SocialController] Publicando contenido ${contenidoId} en ${cuenta.plataforma}`);
+        console.log(`[SocialController] Imágenes encontradas: ${contenido.imagenes?.length || 0}`);
+
         switch (cuenta.plataforma) {
             case 'facebook':
+                const fbPayload = { message: contenido.copy_texto || contenido.contenido };
+                
+                // Si hay imagen, agregarla al payload
+                if (contenido.imagenes && contenido.imagenes.length > 0) {
+                    fbPayload.image_url = contenido.imagenes[0].url_imagen;
+                    console.log(`[SocialController] ✅ Imagen detectada para Facebook: ${fbPayload.image_url}`);
+                } else {
+                    console.log(`[SocialController] ⚠️ No hay imágenes para Facebook`);
+                }
+
                 resultado = await MetaService.publishToFacebook(
                     cuenta.page_id,
                     cuenta.access_token,
-                    { message: contenido.copy_texto || contenido.contenido }
+                    fbPayload
                 );
                 break;
 
             case 'instagram':
                 if (!contenido.imagenes || contenido.imagenes.length === 0) {
+                    console.log(`[SocialController] ❌ Error: Instagram requiere imagen`);
                     return sendError(res, 'Instagram requiere una imagen', 400);
                 }
+                
+                console.log(`[SocialController] ✅ Imagen detectada para Instagram: ${contenido.imagenes[0].url_imagen}`);
+                
                 resultado = await MetaService.publishToInstagram(
                     cuenta.page_id,
                     cuenta.access_token,
@@ -288,6 +310,7 @@ export const publicarContenido = async (req, res) => {
                 break;
 
             case 'linkedin':
+                console.log(`[SocialController] Publicando en LinkedIn (solo texto por ahora)`);
                 resultado = await LinkedInService.publishPost(
                     cuenta.access_token,
                     `urn:li:person:${cuenta.page_id}`,

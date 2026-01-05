@@ -6,7 +6,63 @@
 
 import * as ContenidoModel from '../models/contenido.model.js';
 import * as CampanasModel from '../models/campanas.model.js';
+import * as PublicacionesModel from '../models/publicaciones.model.js';
+import * as CuentasSocialesModel from '../models/cuentasSociales.model.js';
+import * as ImagenesModel from '../models/imagenes.model.js';
 import { sendSuccess, sendError, paginate, paginatedResponse, validateRequired } from '../utils/helpers.js';
+
+/**
+ * Maneja la programación automática de publicaciones
+ * Crea o actualiza la entrada en publicaciones_programadas si el estado es 'programado'
+ */
+const handleScheduling = async (contenido) => {
+    try {
+        // 1. Si NO es programado, verificar si había algo pendiente y borrarlo
+        if (contenido.estado !== 'programado') {
+            const existentes = await PublicacionesModel.getByContenido(contenido.id);
+            const pendiente = existentes.find(p => p.estado === 'pendiente');
+            if (pendiente) {
+                await PublicacionesModel.remove(pendiente.id);
+                console.log(`[AutoSchedule] Eliminada publicación pendiente para contenido ${contenido.id} (estado cambió a ${contenido.estado})`);
+            }
+            return;
+        }
+
+        // 2. Si ES programado, validar fecha
+        if (!contenido.fecha_publicacion) {
+            console.warn(`[AutoSchedule] Contenido ${contenido.id} es programado pero no tiene fecha`);
+            return;
+        }
+
+        // 3. Buscar cuenta conectada para la plataforma
+        const cuentas = await CuentasSocialesModel.getByPlataforma(contenido.plataforma);
+        if (!cuentas || cuentas.length === 0) {
+            console.warn(`[AutoSchedule] No se pudo programar: No hay cuentas conectadas para ${contenido.plataforma}`);
+            return;
+        }
+        const cuenta = cuentas[0]; // Usar la primera disponible
+
+        // 4. Gestionar duplicados (Eliminar anterior si existe para recrear con nuevos datos)
+        const existentes = await PublicacionesModel.getByContenido(contenido.id);
+        const pendiente = existentes.find(p => p.estado === 'pendiente');
+        
+        if (pendiente) {
+            await PublicacionesModel.remove(pendiente.id);
+        }
+
+        // 5. Crear nueva publicación programada
+        await PublicacionesModel.create({
+            contenido_id: contenido.id,
+            cuenta_social_id: cuenta.id,
+            fecha_programada: new Date(contenido.fecha_publicacion)
+        });
+
+        console.log(`[AutoSchedule] ✅ Contenido ${contenido.id} programado para ${contenido.fecha_publicacion} en ${cuenta.nombre_cuenta}`);
+
+    } catch (error) {
+        console.error('[AutoSchedule] Error:', error);
+    }
+};
 
 /**
  * Lista todo el contenido con paginación y filtros
@@ -65,7 +121,8 @@ export const create = async (req, res) => {
     try {
         const {
             campana_id, titulo, contenido, copy_texto,
-            tipo, plataforma, estado, prompt_usado, modelo_ia, fecha_publicacion
+            tipo, plataforma, estado, prompt_usado, modelo_ia, fecha_publicacion,
+            imagen_url, imagen_prompt  // Nuevos campos para imagen de IA
         } = req.body;
 
         // Validar campos requeridos
@@ -113,6 +170,51 @@ export const create = async (req, res) => {
             fecha_publicacion,
             created_by: req.user.id
         });
+
+        console.log('[CONTENIDO] Nuevo contenido creado ID:', nuevoContenido.id);
+        console.log('[CONTENIDO] imagen_url recibida:', imagen_url);
+        console.log('[CONTENIDO] imagen_prompt recibida:', imagen_prompt);
+
+        // Si se proporcionó un array de imágenes, crear registros
+        if (req.body.imagenes && Array.isArray(req.body.imagenes) && req.body.imagenes.length > 0) {
+            console.log(`[IMAGEN] ✅ Procesando ${req.body.imagenes.length} imágenes...`);
+            
+            for (const img of req.body.imagenes) {
+                try {
+                    await ImagenesModel.create({
+                        contenido_id: nuevoContenido.id,
+                        url_imagen: img.url,
+                        prompt_imagen: img.prompt || 'Imagen generada con IA',
+                        modelo_ia: modelo_ia || 'dall-e-3'
+                    });
+                    console.log('[IMAGEN] ✅ Imagen registrada:', img.url);
+                } catch (imgError) {
+                    console.error('[IMAGEN] ❌ Error registrando imagen:', imgError);
+                }
+            }
+        } 
+        // Backward compatibility: Si se proporcionó una sola imagen (imagen_url)
+        else if (imagen_url) {
+            console.log('[IMAGEN] ✅ Iniciando creación de registro de imagen única...');
+            try {
+                const imagenCreada = await ImagenesModel.create({
+                    contenido_id: nuevoContenido.id,
+                    url_imagen: imagen_url,
+                    prompt_imagen: imagen_prompt || 'Imagen generada con IA',
+                    modelo_ia: modelo_ia || 'dall-e-3'
+                });
+                console.log('[IMAGEN] ✅ Registro creado exitosamente:', imagenCreada);
+            } catch (imgError) {
+                console.error('[IMAGEN] ❌ Error creando registro:', imgError);
+                console.error('[IMAGEN] Stack trace:', imgError.stack);
+                // No fallar la creación del contenido si falla la imagen
+            }
+        } else {
+            console.log('[IMAGEN] ⚠️ No se recibieron imágenes');
+        }
+
+        // Intentar programar automáticamente
+        await handleScheduling(nuevoContenido);
 
         return sendSuccess(res, { contenido: nuevoContenido }, 'Contenido creado exitosamente', 201);
     } catch (error) {
@@ -168,6 +270,10 @@ export const update = async (req, res) => {
         }
 
         const contenido = await ContenidoModel.getById(parseInt(id));
+        
+        // Intentar programar automáticamente
+        await handleScheduling(contenido);
+
         return sendSuccess(res, { contenido }, 'Contenido actualizado');
     } catch (error) {
         console.error('Error actualizando contenido:', error);

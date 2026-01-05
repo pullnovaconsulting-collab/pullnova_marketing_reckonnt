@@ -76,7 +76,7 @@ router.post('/generar-prompt-imagen', IAController.generarPromptImagen);
 
 /**
  * @route POST /api/ia/generar-imagen
- * @description Generar imagen real con DALL-E 3
+ * @description Generar imagen real con DALL-E 3 (sin subir a R2 para preview)
  * @access Editor+
  * @body {string} prompt - Prompt para la imagen (requerido)
  * @body {number} contenido_id - ID del contenido a asociar (opcional)
@@ -85,6 +85,24 @@ router.post('/generar-prompt-imagen', IAController.generarPromptImagen);
  * @body {string} style - vivid|natural
  */
 router.post('/generar-imagen', IAController.generarImagen);
+
+/**
+ * @route POST /api/ia/confirmar-imagen
+ * @description Confirmar imagen generada y subir a R2
+ * @access Editor+
+ * @body {string} url_temporal - URL temporal de OpenAI (requerido)
+ * @body {string} prompt - Prompt usado para la imagen
+ */
+router.post('/confirmar-imagen', IAController.confirmarImagen);
+
+/**
+ * @route POST /api/ia/upload-processed-image
+ * @description Subir imagen procesada (editada) a R2
+ * @access Editor+
+ * @body multipart/form-data: image
+ */
+import { upload } from '../middlewares/upload.middleware.js';
+router.post('/upload-processed-image', upload.single('image'), IAController.uploadProcessedImage);
 
 /**
  * @route POST /api/ia/generar-variaciones-imagen
@@ -109,5 +127,14 @@ router.get('/imagenes/:contenidoId', IAController.getImagenesPorContenido);
  * @access Admin
  */
 router.delete('/imagenes/:id', isAdmin, IAController.eliminarImagen);
+
+router.delete('/imagenes/:id', isAdmin, IAController.eliminarImagen);
+
+/**
+ * @route GET /api/ia/proxy-image
+ * @description Proxy para imágenes externas (evitar CORS)
+ * @access Editor+
+ */
+router.get('/proxy-image', IAController.proxyImage);
 
 export default router;

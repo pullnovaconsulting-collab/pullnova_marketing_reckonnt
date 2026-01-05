@@ -6,6 +6,7 @@
 
 import * as PublicacionesModel from '../models/publicaciones.model.js';
 import * as ContenidoModel from '../models/contenido.model.js';
+import * as ImagenesModel from '../models/imagenes.model.js';
 import * as MetricasModel from '../models/metricas.model.js';
 import * as MetaService from '../services/meta.service.js';
 import * as LinkedInService from '../services/linkedin.service.js';
@@ -117,7 +118,7 @@ export const ejecutarCiclo = async () => {
  * @returns {Promise<Object>} Resultado de la publicación
  */
 const publicarEnPlataforma = async (publicacion) => {
-    const { cuenta_plataforma, access_token, page_id, copy_texto, contenido_texto, titulo } = publicacion;
+    const { contenido_id, cuenta_plataforma, access_token, page_id, copy_texto, contenido_texto, titulo } = publicacion;
 
     // Preparar el contenido
     const texto = copy_texto || contenido_texto || titulo;
@@ -130,16 +131,61 @@ const publicarEnPlataforma = async (publicacion) => {
         return { success: false, error: 'Token de acceso no disponible' };
     }
 
+    // Obtener imágenes asociadas al contenido
+    let imageUrl = null;
+    let images = [];
+    try {
+        console.log(`[Scheduler] Buscando imágenes para contenido ${contenido_id}...`);
+        const imagenes = await ImagenesModel.getByContenido(contenido_id);
+        console.log(`[Scheduler] Resultado DB imágenes:`, imagenes);
+        
+        if (imagenes && imagenes.length > 0) {
+            imageUrl = imagenes[0].url_imagen;
+            images = imagenes.map(img => img.url_imagen);
+            console.log(`[Scheduler] ${images.length} imágenes encontradas. URL principal: ${imageUrl}`);
+        } else {
+            console.log(`[Scheduler] ⚠️ No se encontraron imágenes en DB para contenido ${contenido_id}`);
+        }
+    } catch (error) {
+        console.error(`[Scheduler] Error obteniendo imágenes para contenido ${contenido_id}:`, error);
+    }
+
+    // Validación previa a publicación
+    const tipoContenido = publicacion.tipo || 'post';
+    const tieneTexto = !!texto;
+    const tieneImagenes = images.length > 0;
+
+    if (tipoContenido === 'imagen' || tipoContenido === 'carrusel') {
+        if (!tieneImagenes) {
+            return { success: false, error: `El contenido tipo '${tipoContenido}' requiere imágenes pero no se encontraron.` };
+        }
+    }
+
+    if (!tieneTexto && !tieneImagenes) {
+        return { success: false, error: 'La publicación está vacía (sin texto ni imágenes).' };
+    }
+
     switch (cuenta_plataforma) {
         case 'facebook':
-            return await MetaService.publishToFacebook(page_id, access_token, { text: texto });
+            console.log(`[Scheduler] Llamando a publishToFacebook con:`, { 
+                message: texto, 
+                imageUrl, 
+                imagesCount: images.length 
+            });
+            return await MetaService.publishToFacebook(page_id, access_token, { 
+                message: texto,
+                image_url: imageUrl,
+                images: images
+            });
 
         case 'instagram':
-            // Instagram requiere imagen, por ahora publicamos solo si hay imagen
-            // TODO: Obtener imagen asociada al contenido
+            if (!imageUrl && images.length === 0) {
+                return { success: false, error: 'Instagram requiere una imagen para publicar' };
+            }
             return await MetaService.publishToInstagram(page_id, access_token, {
-                text: texto,
-                // image_url: se necesita implementar
+                caption: texto,
+                image_url: imageUrl,
+                images: images
             });
 
         case 'linkedin':

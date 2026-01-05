@@ -282,6 +282,8 @@ FORMATO LINKEDIN:
 
     prompt += especificaciones[plataforma] || especificaciones.instagram;
 
+    prompt += `\n\nIMPORTANTE: Responde ÚNICAMENTE con el contenido del post. No incluyas explicaciones, introducciones, ni repitas estas instrucciones en tu respuesta.`;
+
     if (variaciones > 1) {
         prompt += `\n\nGenera ${variaciones} versiones diferentes, separadas por "---"`;
     }

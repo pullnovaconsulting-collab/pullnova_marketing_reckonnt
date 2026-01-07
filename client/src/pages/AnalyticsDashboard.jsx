@@ -45,20 +45,53 @@ export default function AnalyticsDashboard() {
     const [dashboardData, setDashboardData] = useState(null);
     const [kpisData, setKpisData] = useState(null);
     const [comparativaData, setComparativaData] = useState(null);
+    
+    // Date filters
+    const [fechaDesde, setFechaDesde] = useState('');
+    const [fechaHasta, setFechaHasta] = useState('');
+    const [filtrosAplicados, setFiltrosAplicados] = useState(false);
+
+    // Compute date range based on periodo or custom dates
+    const getDateRange = () => {
+        const hoy = new Date();
+        const formatDate = (d) => d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        
+        if (filtrosAplicados && fechaDesde && fechaHasta) {
+            return {
+                desde: fechaDesde,
+                hasta: fechaHasta,
+                label: `${new Date(fechaDesde).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })} - ${new Date(fechaHasta).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+            };
+        }
+        
+        let diasAtras = 7;
+        if (periodo === 'mes') diasAtras = 30;
+        if (periodo === 'trimestre') diasAtras = 90;
+        
+        const desde = new Date(hoy.getTime() - diasAtras * 24 * 60 * 60 * 1000);
+        return {
+            desde: desde.toISOString().split('T')[0],
+            hasta: hoy.toISOString().split('T')[0],
+            label: `${formatDate(desde)} - ${formatDate(hoy)}`
+        };
+    };
+
+    const dateRange = getDateRange();
 
     useEffect(() => {
         fetchAllData();
-    }, [periodo]);
+    }, [periodo, filtrosAplicados]);
 
     const fetchAllData = async () => {
         try {
             setLoading(true);
             setError(null);
 
+            const range = getDateRange();
             const [dashboard, kpis, comparativa] = await Promise.all([
                 dashboardApi.getDashboardStats(),
                 dashboardApi.getKPIs(periodo),
-                dashboardApi.getComparativa(),
+                dashboardApi.getComparativa(range.desde, range.hasta),
             ]);
 
             setDashboardData(dashboard.data);
@@ -220,6 +253,18 @@ export default function AnalyticsDashboard() {
         return num?.toString() || '0';
     };
 
+    const handleApplyFilters = () => {
+        if (fechaDesde && fechaHasta) {
+            setFiltrosAplicados(true);
+        }
+    };
+
+    const handleClearFilters = () => {
+        setFechaDesde('');
+        setFechaHasta('');
+        setFiltrosAplicados(false);
+    };
+
     return (
         <div className="analytics-dashboard">
             {/* Header */}
@@ -236,20 +281,20 @@ export default function AnalyticsDashboard() {
                 <div className="header-right">
                     <div className="period-selector">
                         <button 
-                            className={`period-btn ${periodo === 'semana' ? 'active' : ''}`}
-                            onClick={() => setPeriodo('semana')}
+                            className={`period-btn ${periodo === 'semana' && !filtrosAplicados ? 'active' : ''}`}
+                            onClick={() => { setPeriodo('semana'); setFiltrosAplicados(false); }}
                         >
                             Semana
                         </button>
                         <button 
-                            className={`period-btn ${periodo === 'mes' ? 'active' : ''}`}
-                            onClick={() => setPeriodo('mes')}
+                            className={`period-btn ${periodo === 'mes' && !filtrosAplicados ? 'active' : ''}`}
+                            onClick={() => { setPeriodo('mes'); setFiltrosAplicados(false); }}
                         >
                             Mes
                         </button>
                         <button 
-                            className={`period-btn ${periodo === 'trimestre' ? 'active' : ''}`}
-                            onClick={() => setPeriodo('trimestre')}
+                            className={`period-btn ${periodo === 'trimestre' && !filtrosAplicados ? 'active' : ''}`}
+                            onClick={() => { setPeriodo('trimestre'); setFiltrosAplicados(false); }}
                         >
                             Trimestre
                         </button>
@@ -260,6 +305,56 @@ export default function AnalyticsDashboard() {
                     </div>
                 </div>
             </header>
+
+            {/* Filters Section */}
+            <section className="filters-section">
+                <div className="filters-container">
+                    <div className="filter-group">
+                        <label>📅 Desde:</label>
+                        <input 
+                            type="date" 
+                            value={fechaDesde}
+                            onChange={(e) => setFechaDesde(e.target.value)}
+                            className="date-input"
+                        />
+                    </div>
+                    <div className="filter-group">
+                        <label>📅 Hasta:</label>
+                        <input 
+                            type="date" 
+                            value={fechaHasta}
+                            onChange={(e) => setFechaHasta(e.target.value)}
+                            className="date-input"
+                        />
+                    </div>
+                    <div className="filter-actions">
+                        <button 
+                            className="filter-btn apply"
+                            onClick={handleApplyFilters}
+                            disabled={!fechaDesde || !fechaHasta}
+                        >
+                            🔍 Aplicar Filtro
+                        </button>
+                        {filtrosAplicados && (
+                            <button 
+                                className="filter-btn clear"
+                                onClick={handleClearFilters}
+                            >
+                                ✕ Limpiar
+                            </button>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Date Range Indicator */}
+                <div className="date-range-indicator">
+                    <span className="date-range-label">📊 Mostrando datos del período:</span>
+                    <span className="date-range-value">{dateRange.label}</span>
+                    {filtrosAplicados && (
+                        <span className="filter-badge">Filtro personalizado</span>
+                    )}
+                </div>
+            </section>
 
             {/* Main Content */}
             <main className="analytics-main">

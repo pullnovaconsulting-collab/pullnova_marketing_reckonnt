@@ -178,6 +178,9 @@ export default function Dashboard() {
                                         <Link to="/ia" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
                                             🤖 Asistente IA
                                         </Link>
+                                        <Link to="/analytics" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                                            📈 Dashboard Analytics
+                                        </Link>
                                         {user?.rol === 'admin' && (
                                             <Link to="/usuarios" className="table-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
                                                 👥 Gestionar Usuarios

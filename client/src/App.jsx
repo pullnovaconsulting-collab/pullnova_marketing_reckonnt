@@ -13,6 +13,7 @@ import UsersPage from './pages/UsersPage';
 import CampanasPage from './pages/CampanasPage';
 import ContenidoPage from './pages/ContenidoPage';
 import IAPage from './pages/IAPage';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import './App.css';
 
 /**
@@ -84,6 +85,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <IAPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AnalyticsDashboard />
           </ProtectedRoute>
         }
       />

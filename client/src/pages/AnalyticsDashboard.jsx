@@ -4,8 +4,20 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Layout from '../components/Layout';
+import { 
+    BarChart3, 
+    TrendingUp, 
+    Users, 
+    Target,
+    Clock,
+    DollarSign,
+    Calendar,
+    Search,
+    X,
+    Trophy
+} from 'lucide-react';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -266,19 +278,14 @@ export default function AnalyticsDashboard() {
     };
 
     return (
-        <div className="analytics-dashboard">
-            {/* Header */}
-            <header className="analytics-header">
-                <div className="header-left">
-                    <Link to="/" className="back-button">
-                        ← Volver
-                    </Link>
+        <Layout>
+            <div className="analytics-dashboard">
+                {/* Header */}
+                <div className="analytics-page-header">
                     <div className="header-title">
-                        <h1>📈 Dashboard Analytics</h1>
+                        <h1><BarChart3 size={28} /> Dashboard Analytics</h1>
                         <p>Métricas y rendimiento de tus campañas</p>
                     </div>
-                </div>
-                <div className="header-right">
                     <div className="period-selector">
                         <button 
                             className={`period-btn ${periodo === 'semana' && !filtrosAplicados ? 'active' : ''}`}
@@ -299,18 +306,13 @@ export default function AnalyticsDashboard() {
                             Trimestre
                         </button>
                     </div>
-                    <div className="user-info">
-                        <span>👤 {user?.nombre}</span>
-                        <button onClick={logout} className="logout-btn">Salir</button>
-                    </div>
                 </div>
-            </header>
 
             {/* Filters Section */}
             <section className="filters-section">
                 <div className="filters-container">
                     <div className="filter-group">
-                        <label>📅 Desde:</label>
+                        <label><Calendar size={16} /> Desde:</label>
                         <input 
                             type="date" 
                             value={fechaDesde}
@@ -319,7 +321,7 @@ export default function AnalyticsDashboard() {
                         />
                     </div>
                     <div className="filter-group">
-                        <label>📅 Hasta:</label>
+                        <label><Calendar size={16} /> Hasta:</label>
                         <input 
                             type="date" 
                             value={fechaHasta}
@@ -333,14 +335,14 @@ export default function AnalyticsDashboard() {
                             onClick={handleApplyFilters}
                             disabled={!fechaDesde || !fechaHasta}
                         >
-                            🔍 Aplicar Filtro
+                            <Search size={16} /> Aplicar Filtro
                         </button>
                         {filtrosAplicados && (
                             <button 
                                 className="filter-btn clear"
                                 onClick={handleClearFilters}
                             >
-                                ✕ Limpiar
+                                <X size={16} /> Limpiar
                             </button>
                         )}
                     </div>
@@ -348,7 +350,7 @@ export default function AnalyticsDashboard() {
                 
                 {/* Date Range Indicator */}
                 <div className="date-range-indicator">
-                    <span className="date-range-label">📊 Mostrando datos del período:</span>
+                    <span className="date-range-label"><BarChart3 size={16} /> Mostrando datos del período:</span>
                     <span className="date-range-value">{dateRange.label}</span>
                     {filtrosAplicados && (
                         <span className="filter-badge">Filtro personalizado</span>
@@ -507,28 +509,28 @@ export default function AnalyticsDashboard() {
                         {/* Stats Summary */}
                         <section className="summary-section">
                             <div className="summary-card">
-                                <div className="summary-icon">⏱️</div>
+                            <div className="summary-icon"><Clock size={24} /></div>
                                 <div className="summary-content">
                                     <span className="summary-value">{kpisData?.kpis?.tiempo_ahorrado_horas || 0}h</span>
                                     <span className="summary-label">Tiempo Ahorrado</span>
                                 </div>
                             </div>
                             <div className="summary-card">
-                                <div className="summary-icon">💰</div>
+                                <div className="summary-icon"><DollarSign size={24} /></div>
                                 <div className="summary-content">
                                     <span className="summary-value">{kpisData?.kpis?.costo_ahorrado_estimado || '$0'}</span>
                                     <span className="summary-label">Ahorro Estimado</span>
                                 </div>
                             </div>
                             <div className="summary-card">
-                                <div className="summary-icon">🎯</div>
+                                <div className="summary-icon"><Target size={24} /></div>
                                 <div className="summary-content">
                                     <span className="summary-value">{kpisData?.kpis?.meta_semanal || 4}</span>
                                     <span className="summary-label">Meta Semanal</span>
                                 </div>
                             </div>
                             <div className="summary-card">
-                                <div className="summary-icon">📊</div>
+                                <div className="summary-icon"><TrendingUp size={24} /></div>
                                 <div className="summary-content">
                                     <span className="summary-value">{dashboardData?.resumen?.engagement_promedio || '0%'}</span>
                                     <span className="summary-label">Engagement Promedio</span>
@@ -540,7 +542,7 @@ export default function AnalyticsDashboard() {
                         <section className="table-section">
                             <div className="table-card">
                                 <div className="table-header">
-                                    <h3>🏆 Top Contenidos por Engagement</h3>
+                                    <h3><Trophy size={20} /> Top Contenidos por Engagement</h3>
                                 </div>
                                 <div className="table-content">
                                     {dashboardData?.top_contenidos?.length > 0 ? (
@@ -593,10 +595,7 @@ export default function AnalyticsDashboard() {
                 )}
             </main>
 
-            {/* Footer */}
-            <footer className="analytics-footer">
-                <p>PULLNOVA Marketing © 2024 - Dashboard Analytics - RECKONNT</p>
-            </footer>
-        </div>
+            </div>
+        </Layout>
     );
 }

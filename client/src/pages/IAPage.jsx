@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Layout from '../components/Layout';
 import * as iaApi from '../services/iaApi';
 import * as campanasApi from '../services/campanasApi';
+import { Sparkles, Wand2, Image, Copy, Trash2 } from 'lucide-react';
 import '../styles/Users.css';
 import '../styles/Campanas.css';
 import '../styles/Contenido.css';
@@ -333,31 +334,10 @@ export default function IAPage() {
     };
 
     return (
-        <div className="users-page">
-            {/* Header */}
-            <header className="header">
-                <div className="logo">
-                    <div className="logo-icon">P</div>
-                    <span className="logo-text">PULLNOVA</span>
-                </div>
-                <div className="header-right">
-                    <div className="user-menu">
-                        <span className="user-name">👤 {currentUser?.nombre}</span>
-                        <button onClick={logout} className="logout-button">
-                            Cerrar sesión
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            {/* Contenido principal */}
-            <main className="users-container">
-                <Link to="/" className="nav-back">
-                    ← Volver al Dashboard
-                </Link>
-
+        <Layout>
+            <div className="users-page">
                 <div className="page-header">
-                    <h1 className="page-title">🤖 Asistente de IA</h1>
+                    <h1 className="page-title"><Sparkles size={24} /> Asistente de IA</h1>
                 </div>
 
                 {/* Status badges */}
@@ -636,7 +616,7 @@ export default function IAPage() {
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </Layout>
     );
 }

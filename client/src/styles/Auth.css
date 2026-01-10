@@ -13,6 +13,7 @@
     padding: 2rem;
     position: relative;
     overflow: hidden;
+    background: var(--bg-base);
 }
 
 /* ============== CARD DE AUTENTICACIÓN ============== */
@@ -20,12 +21,12 @@
 .auth-card {
     width: 100%;
     max-width: 420px;
-    background: rgba(26, 26, 46, 0.8);
+    background: var(--bg-surface);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: 2.5rem;
-    box-shadow: var(--shadow-glow);
+    box-shadow: var(--shadow-lg);
     position: relative;
     z-index: 10;
     animation: cardAppear 0.5s ease-out;

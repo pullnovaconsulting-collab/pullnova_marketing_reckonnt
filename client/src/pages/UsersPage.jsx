@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Layout from '../components/Layout';
 import * as usersApi from '../services/usersApi';
 import UserModal from '../components/UserModal';
+import { Users, Plus, Pencil, Trash2 } from 'lucide-react';
 import '../styles/Users.css';
 
 export default function UsersPage() {
@@ -187,35 +188,13 @@ export default function UsersPage() {
     };
 
     return (
-        <div className="users-page">
-            {/* Header */}
-            <header className="header">
-                <div className="logo">
-                    <div className="logo-icon">P</div>
-                    <span className="logo-text">PULLNOVA</span>
-                </div>
-                <div className="header-right">
-                    <div className="user-menu">
-                        <span className="user-name">👤 {currentUser?.nombre}</span>
-                        <button onClick={logout} className="logout-button">
-                            Cerrar sesión
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            {/* Contenido principal */}
-            <main className="users-container">
-                {/* Navegación */}
-                <Link to="/" className="nav-back">
-                    ← Volver al Dashboard
-                </Link>
-
+        <Layout>
+            <div className="users-page">
                 {/* Header de página */}
                 <div className="page-header">
-                    <h1 className="page-title">👥 Gestión de Usuarios</h1>
+                    <h1 className="page-title"><Users size={24} /> Gestión de Usuarios</h1>
                     <button className="btn-primary" onClick={handleCreate}>
-                        + Nuevo Usuario
+                        <Plus size={18} /> Nuevo Usuario
                     </button>
                 </div>
 
@@ -256,12 +235,12 @@ export default function UsersPage() {
                         <div className="loading">
                             <div className="spinner"></div>
                             <span>Cargando usuarios...</span>
-                        </div>
-                    ) : filteredUsers.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon">👥</div>
-                            <p>No hay usuarios para mostrar</p>
-                        </div>
+                            </div>
+                        ) : filteredUsers.length === 0 ? (
+                            <div className="empty-state">
+                                <Users size={48} className="empty-state-icon" />
+                                <p>No hay usuarios para mostrar</p>
+                            </div>
                     ) : (
                         <>
                             <table className="users-table">
@@ -299,14 +278,14 @@ export default function UsersPage() {
                                                         className="btn-secondary"
                                                         onClick={() => handleEdit(user)}
                                                     >
-                                                        ✏️ Editar
+                                                        <Pencil size={14} /> Editar
                                                     </button>
                                                     {user.id !== currentUser?.id && (
                                                         <button
                                                             className="btn-danger"
                                                             onClick={() => handleDelete(user)}
                                                         >
-                                                            🗑️ Eliminar
+                                                            <Trash2 size={14} /> Eliminar
                                                         </button>
                                                     )}
                                                 </div>
@@ -341,12 +320,7 @@ export default function UsersPage() {
                         </>
                     )}
                 </div>
-            </main>
-
-            {/* Footer */}
-            <footer className="footer">
-                <p>PULLNOVA Marketing © 2024 - Sistema de Asistencia de Marketing IA - RECKONNT</p>
-            </footer>
+            </div>
 
             {/* Modal */}
             <UserModal
@@ -359,6 +333,6 @@ export default function UsersPage() {
                 user={editingUser}
                 loading={saving}
             />
-        </div>
+        </Layout>
     );
 }

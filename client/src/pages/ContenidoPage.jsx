@@ -4,11 +4,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Layout from '../components/Layout';
 import * as contenidoApi from '../services/contenidoApi';
 import * as campanasApi from '../services/campanasApi';
 import ContenidoModal from '../components/ContenidoModal';
+import { FileText, Plus, Check, X, Calendar, Pencil, Trash2, Image, Video, Smartphone, Megaphone } from 'lucide-react';
 import '../styles/Users.css';
 import '../styles/Campanas.css';
 import '../styles/Contenido.css';
@@ -218,34 +219,13 @@ export default function ContenidoPage() {
     };
 
     return (
-        <div className="users-page">
-            {/* Header */}
-            <header className="header">
-                <div className="logo">
-                    <div className="logo-icon">P</div>
-                    <span className="logo-text">PULLNOVA</span>
-                </div>
-                <div className="header-right">
-                    <div className="user-menu">
-                        <span className="user-name">👤 {currentUser?.nombre}</span>
-                        <button onClick={logout} className="logout-button">
-                            Cerrar sesión
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            {/* Contenido principal */}
-            <main className="users-container">
-                <Link to="/" className="nav-back">
-                    ← Volver al Dashboard
-                </Link>
-
+        <Layout>
+            <div className="users-page">
                 <div className="page-header">
-                    <h1 className="page-title">📝 Gestión de Contenido</h1>
+                    <h1 className="page-title"><FileText size={24} /> Gestión de Contenido</h1>
                     {isEditor && (
                         <button className="btn-primary" onClick={handleCreate}>
-                            + Nuevo Contenido
+                            <Plus size={18} /> Nuevo Contenido
                         </button>
                     )}
                 </div>
@@ -326,9 +306,9 @@ export default function ContenidoPage() {
                         <span>Cargando contenido...</span>
                     </div>
                 ) : contenidos.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-icon">📝</div>
-                        <p>No hay contenido para mostrar</p>
+                        <div className="empty-state">
+                            <FileText size={48} className="empty-state-icon" />
+                            <p>No hay contenido para mostrar</p>
                         {isEditor && (
                             <button className="btn-primary" onClick={handleCreate} style={{ marginTop: '1rem' }}>
                                 Crear primer contenido
@@ -454,11 +434,7 @@ export default function ContenidoPage() {
                         </button>
                     </div>
                 )}
-            </main>
-
-            <footer className="footer">
-                <p>PULLNOVA Marketing © 2024 - Sistema de Asistencia de Marketing IA - RECKONNT</p>
-            </footer>
+                </div>
 
             <ContenidoModal
                 isOpen={modalOpen}
@@ -471,6 +447,6 @@ export default function ContenidoPage() {
                 campanas={campanas}
                 loading={saving}
             />
-        </div>
+        </Layout>
     );
 }

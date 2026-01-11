@@ -5,23 +5,53 @@
 
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Instagram, Facebook, Linkedin, Twitter } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Instagram, Facebook, Linkedin, Twitter, RefreshCw } from 'lucide-react';
+import * as publicacionesApi from '../services/publicacionesApi';
 import '../styles/Hub.css';
 
 export default function CalendarioPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(null);
     const [scheduledPosts, setScheduledPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Simulated scheduled posts
+    // Fetch scheduled posts from API
     useEffect(() => {
-        setScheduledPosts([
-            { id: 1, date: '2026-01-10', title: 'Promoción de Producto', platform: 'instagram', time: '10:00' },
-            { id: 2, date: '2026-01-12', title: 'Tips de Marketing', platform: 'facebook', time: '14:00' },
-            { id: 3, date: '2026-01-15', title: 'Webinar Anuncio', platform: 'linkedin', time: '09:00' },
-            { id: 4, date: '2026-01-18', title: 'Black Friday Preview', platform: 'twitter', time: '16:00' },
-        ]);
-    }, []);
+        fetchScheduledPosts();
+    }, [currentDate]);
+
+    const fetchScheduledPosts = async () => {
+        try {
+            setLoading(true);
+            const mes = currentDate.getMonth() + 1;
+            const anio = currentDate.getFullYear();
+            const response = await publicacionesApi.getCalendario(mes, anio);
+            
+            if (response?.data?.publicaciones) {
+                // Transform API data to match expected format
+                const posts = response.data.publicaciones.map(pub => ({
+                    id: pub.id,
+                    date: pub.fecha_programada?.split('T')[0] || pub.fecha_programada,
+                    title: pub.contenido_titulo || pub.titulo || 'Publicación programada',
+                    platform: pub.plataforma?.toLowerCase() || 'instagram',
+                    time: pub.fecha_programada?.split('T')[1]?.substring(0, 5) || '12:00',
+                    estado: pub.estado
+                }));
+                setScheduledPosts(posts);
+            }
+        } catch (err) {
+            console.error('Error loading scheduled posts:', err);
+            // Fallback to demo data if API fails
+            setScheduledPosts([
+                { id: 1, date: '2026-01-13', title: 'Promoción de Producto', platform: 'instagram', time: '10:00' },
+                { id: 2, date: '2026-01-15', title: 'Tips de Marketing', platform: 'facebook', time: '14:00' },
+                { id: 3, date: '2026-01-18', title: 'Webinar Anuncio', platform: 'linkedin', time: '09:00' },
+                { id: 4, date: '2026-01-20', title: 'Nuevo Producto', platform: 'instagram', time: '16:00' },
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();

@@ -146,6 +146,12 @@ const obtenerMetricasFacebook = async (postId, accessToken) => {
         const data = await response.json();
 
         if (data.error) {
+            console.error(`[MetricsCollector] ❌ Error de Facebook API para post ${postId}:`, {
+                message: data.error.message,
+                type: data.error.type,
+                code: data.error.code,
+                fbtrace_id: data.error.fbtrace_id
+            });
             throw new Error(data.error.message);
         }
 

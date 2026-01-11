@@ -33,6 +33,27 @@ export const generarCopy = async (req, res) => {
             // Si no hay config de marca, continuar sin ella
         }
 
+        // Obtener contexto de campaña si existe
+        let contextoCampaña = null;
+        if (campana_id) {
+            try {
+                const campana = await CampanasModel.getById(parseInt(campana_id));
+                if (campana) {
+                    contextoCampaña = {
+                        nombre: campana.nombre,
+                        objetivo: campana.objetivo,
+                        descripcion: campana.descripcion,
+                        fecha_inicio: campana.fecha_inicio,
+                        fecha_fin: campana.fecha_fin,
+                        kpi_principal: campana.kpi_principal,
+                        presupuesto: campana.presupuesto
+                    };
+                }
+            } catch (e) {
+                console.error('Error obteniendo contexto de campaña:', e);
+            }
+        }
+
         // Elegir servicio según modelo solicitado
         let resultado;
         const usarOpenAI = modelo === 'openai' || modelo === 'gpt-4';
@@ -50,7 +71,8 @@ export const generarCopy = async (req, res) => {
                 tono: tono || contextoMarca?.tono_voz || 'profesional',
                 segmento: segmento || contextoMarca?.segmento_principal || 'PyMEs',
                 variaciones: parseInt(variaciones) || 1,
-                contextoMarca
+                contextoMarca,
+                contextoCampaña // Pasamos el contexto de la campaña
             });
         } else {
             const config = GeminiService.verificarConfiguracion();
@@ -65,7 +87,8 @@ export const generarCopy = async (req, res) => {
                 tono: tono || contextoMarca?.tono_voz || 'profesional',
                 segmento: segmento || contextoMarca?.segmento_principal || 'PyMEs',
                 variaciones: parseInt(variaciones) || 1,
-                contextoMarca
+                contextoMarca,
+                contextoCampaña // Pasamos el contexto de la campaña
             });
         }
 
@@ -325,15 +348,15 @@ export const uploadProcessedImage = async (req, res) => {
 
         const buffer = req.file.buffer;
         const filename = `processed-${Date.now()}-${Math.round(Math.random() * 1E9)}.png`;
-        
+
         // Subir a R2 usando el servicio de storage existente
         // Importamos dinámicamente o usamos el servicio ya importado si tiene el método
         // En este archivo ya importamos StorageService en otros controladores?
         // No, pero DalleService usa StorageService. 
         // Vamos a importar StorageService directamente aquí también.
-        
+
         // Nota: Necesitamos importar StorageService al inicio del archivo si no está
-        const r2Url = await import('../services/storage.service.js').then(m => 
+        const r2Url = await import('../services/storage.service.js').then(m =>
             m.uploadImage(buffer, filename, req.file.mimetype)
         );
 

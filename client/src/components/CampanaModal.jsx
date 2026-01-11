@@ -181,7 +181,7 @@ export default function CampanaModal({ isOpen, onClose, onSave, campana, loading
                                 className="form-input"
                                 value={formData.nombre}
                                 onChange={handleChange}
-                                placeholder="Ej: Campaña Black Friday 2024"
+                                placeholder="Ej: Campaña Black Friday "
                             />
                             {errors.nombre && <span className="form-error">{errors.nombre}</span>}
                         </div>
@@ -289,44 +289,28 @@ export default function CampanaModal({ isOpen, onClose, onSave, campana, loading
                         </div>
 
                         {/* Estado (solo en edición) */}
-                        {isEditing && (
-                            <div className="form-group">
-                                <label className="form-label" htmlFor="estado">
-                                    Estado
-                                </label>
-                                <select
-                                    id="estado"
-                                    name="estado"
-                                    className="form-select"
-                                    value={formData.estado}
-                                    onChange={handleChange}
-                                >
-                                    {ESTADOS.map(estado => (
-                                        <option key={estado.value} value={estado.value}>
-                                            {estado.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+                        {/* Estado */}
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="estado">
+                                Estado
+                            </label>
+                            <select
+                                id="estado"
+                                name="estado"
+                                className="form-select"
+                                value={formData.estado}
+                                onChange={handleChange}
+                            >
+                                {ESTADOS.map(estado => (
+                                    <option key={estado.value} value={estado.value}>
+                                        {estado.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
                         {/* Plataformas */}
-                        <div className="form-group">
-                            <label className="form-label">Plataformas</label>
-                            <div className="plataformas-grid">
-                                {PLATAFORMAS.map(plat => (
-                                    <button
-                                        key={plat.value}
-                                        type="button"
-                                        className={`plataforma-chip ${Array.isArray(formData.plataformas) && formData.plataformas.includes(plat.value) ? 'active' : ''}`}
-                                        onClick={() => handlePlataformaToggle(plat.value)}
-                                    >
-                                        <span>{plat.icon}</span>
-                                        <span>{plat.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+
                     </div>
 
                     <div className="modal-footer">

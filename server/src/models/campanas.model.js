@@ -75,26 +75,32 @@ export const getById = async (id) => {
 export const create = async ({
     nombre,
     descripcion = null,
+    objetivo = null,
     estado = 'borrador',
     fecha_inicio = null,
     fecha_fin = null,
-    presupuesto = 0
+    presupuesto = 0,
+    plataformas = null,
+    kpi_principal = null
 }) => {
     const [result] = await pool.query(
         `INSERT INTO campanas 
-     (nombre, descripcion, estado, fecha_inicio, fecha_fin, presupuesto) 
-     VALUES (?, ?, ?, ?, ?, ?)`,
-        [nombre, descripcion, estado, fecha_inicio, fecha_fin, presupuesto]
+     (nombre, descripcion, objetivo, estado, fecha_inicio, fecha_fin, presupuesto, plataformas, kpi_principal) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [nombre, descripcion, objetivo, estado, fecha_inicio, fecha_fin, presupuesto, plataformas, kpi_principal]
     );
 
     return {
         id: result.insertId,
         nombre,
         descripcion,
+        objetivo,
         estado,
         fecha_inicio,
         fecha_fin,
-        presupuesto
+        presupuesto,
+        plataformas,
+        kpi_principal
     };
 };
 

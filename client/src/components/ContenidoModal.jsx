@@ -83,7 +83,21 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
             setActiveTab('post');
         }
         setErrors({});
-        setConfirmedImages([]);
+        // Cargar imágenes existentes (si hay)
+        if (contenido && contenido.imagenes && Array.isArray(contenido.imagenes) && contenido.imagenes.length > 0) {
+            setConfirmedImages(contenido.imagenes.map(img => ({
+                url: img.url_imagen || img.url,
+                prompt: img.prompt_imagen || img.prompt || ''
+            })));
+        } else if (contenido && contenido.imagen_url) {
+            // Compatibilidad hacia atrás (si solo tenía un campo de imagen)
+            setConfirmedImages([{
+                url: contenido.imagen_url,
+                prompt: contenido.imagen_prompt || ''
+            }]);
+        } else {
+            setConfirmedImages([]);
+        }
         setAiError(null);
         setAiSuccess(null);
     }, [contenido, isOpen]);
@@ -146,22 +160,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                 </div>
 
                 {/* Tabs de tipo de contenido */}
-                <div className="content-tabs">
-                    {TIPOS.map(tipo => (
-                        <button
-                            key={tipo.value}
-                            type="button"
-                            className={`content-tab ${formData.tipo === tipo.value ? 'active' : ''}`}
-                            onClick={() => {
-                                setFormData(prev => ({ ...prev, tipo: tipo.value }));
-                                setActiveTab(tipo.value);
-                            }}
-                        >
-                            <span>{tipo.icon}</span>
-                            <span>{tipo.label}</span>
-                        </button>
-                    ))}
-                </div>
+
 
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
@@ -170,24 +169,24 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                         {aiError && <div className="alert alert-error">⚠️ {aiError}</div>}
 
                         {/* Título */}
-                            <div className="form-group">
-                                <label className="form-label" htmlFor="titulo">
-                                    Título *
-                                </label>
-                                <input
-                                    type="text"
-                                    id="titulo"
-                                    name="titulo"
-                                    className="form-input"
-                                    value={formData.titulo}
-                                    onChange={handleChange}
-                                    placeholder="Título del contenido"
-                                />
-                                {errors.titulo && <span className="form-error">{errors.titulo}</span>}
-                            </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="titulo">
+                                Título *
+                            </label>
+                            <input
+                                type="text"
+                                id="titulo"
+                                name="titulo"
+                                className="form-input"
+                                value={formData.titulo}
+                                onChange={handleChange}
+                                placeholder="Título del contenido"
+                            />
+                            {errors.titulo && <span className="form-error">{errors.titulo}</span>}
+                        </div>
                         {/* Renderizado dinámico de pestañas */}
                         {activeTab === 'post' && (
-                            <PostTab 
+                            <PostTab
                                 formData={formData}
                                 handleChange={handleChange}
                                 setFormData={setFormData}
@@ -205,7 +204,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
 
                         {/* Campos comunes a todos los tipos */}
                         <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-                            
+
 
                             {/* Plataforma */}
                             <div className="form-group">

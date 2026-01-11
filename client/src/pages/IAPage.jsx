@@ -194,14 +194,21 @@ export default function IAPage() {
                 style: imagenForm.style
             });
 
-            // CORRECCIÓN: Verificar también url_imagen que devuelve el servicio
-            if (!res.data || (!res.data.url && !res.data.data?.[0]?.url && !res.data.url_imagen)) {
+            // Soportar diferentes formatos de respuesta (flat o nested)
+            const imageUrl = res.url ||
+                res.url_imagen ||
+                res.data?.url ||
+                res.data?.url_imagen ||
+                res.data?.data?.[0]?.url;
+
+            if (!imageUrl) {
+                console.error('Respuesta IA:', res);
                 throw new Error('No se recibió una URL de imagen válida del servicio.');
             }
 
             setResult({
                 type: 'imagen',
-                data: res.data
+                data: res.data || res // Guardar toda la respuesta
             });
 
             setSuccess('Imagen generada exitosamente');
@@ -309,7 +316,10 @@ export default function IAPage() {
 
         if (result.type === 'imagen') {
             // Soportar url directa, o estructura de openai, o url_imagen
-            const imageUrl = result.data.url || result.data.data?.[0]?.url || result.data.url_imagen;
+            const imageUrl = result.data.url ||
+                result.data.url_imagen ||
+                result.data.data?.[0]?.url ||
+                result.data.data?.url; // Fallback additional check
 
             return (
                 <div className="ia-image-result">

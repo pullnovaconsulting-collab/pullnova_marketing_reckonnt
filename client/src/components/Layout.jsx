@@ -6,18 +6,19 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
-import { 
-    Sparkles, 
-    Calendar, 
-    CheckCircle, 
-    BarChart3, 
+import {
+    Sparkles,
+    Calendar,
+    CheckCircle,
+    BarChart3,
     Settings,
     Users,
     Megaphone,
     FileText,
     LogOut,
     ChevronDown,
-    User
+    User,
+    Home
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import '../styles/Layout.css';
@@ -48,15 +49,15 @@ export default function Layout({ children, activeTab }) {
     };
 
     const navItems = [
-        { path: '/', label: 'Generar', icon: Sparkles, show: isEditor },
+        { path: '/', label: '', icon: Home, show: isEditor },
+        { path: '/campanas', label: 'Campañas', icon: Megaphone, show: isEditor },
+        { path: '/contenido', label: 'Contenido', icon: FileText, show: isEditor },
         { path: '/calendario', label: 'Calendario', icon: Calendar, show: isEditor },
-        { path: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, show: isEditor },
+        { path: '/aprobaciones', label: 'Aprobaciones', icon: CheckCircle, show: false },
         { path: '/analytics', label: 'Analytics', icon: BarChart3, show: true },
     ];
 
     const dropdownItems = [
-        { path: '/campanas', label: 'Campañas', icon: Megaphone, show: isEditor },
-        { path: '/contenido', label: 'Contenido', icon: FileText, show: isEditor },
         { path: '/usuarios', label: 'Usuarios', icon: Users, show: isAdmin },
     ];
 
@@ -74,7 +75,7 @@ export default function Layout({ children, activeTab }) {
                             <NavLink
                                 key={item.path}
                                 to={item.path}
-                                className={({ isActive }) => 
+                                className={({ isActive }) =>
                                     `nav-item ${isActive ? 'active' : ''}`
                                 }
                             >
@@ -89,7 +90,7 @@ export default function Layout({ children, activeTab }) {
                     <ThemeToggle />
 
                     <div className="user-dropdown" ref={dropdownRef}>
-                        <button 
+                        <button
                             className="user-dropdown-trigger"
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                         >
@@ -107,7 +108,7 @@ export default function Layout({ children, activeTab }) {
                                     <span className="dropdown-role">{user?.rol}</span>
                                 </div>
                                 <div className="dropdown-divider" />
-                                
+
                                 {dropdownItems.filter(item => item.show).map(item => (
                                     <NavLink
                                         key={item.path}
@@ -119,7 +120,7 @@ export default function Layout({ children, activeTab }) {
                                         <span>{item.label}</span>
                                     </NavLink>
                                 ))}
-                                
+
                                 <div className="dropdown-divider" />
                                 <button className="dropdown-item logout" onClick={handleLogout}>
                                     <LogOut size={16} />

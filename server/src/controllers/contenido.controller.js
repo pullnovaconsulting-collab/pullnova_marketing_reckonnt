@@ -45,7 +45,7 @@ const handleScheduling = async (contenido) => {
         // 4. Gestionar duplicados (Eliminar anterior si existe para recrear con nuevos datos)
         const existentes = await PublicacionesModel.getByContenido(contenido.id);
         const pendiente = existentes.find(p => p.estado === 'pendiente');
-        
+
         if (pendiente) {
             await PublicacionesModel.remove(pendiente.id);
         }
@@ -178,7 +178,7 @@ export const create = async (req, res) => {
         // Si se proporcionó un array de imágenes, crear registros
         if (req.body.imagenes && Array.isArray(req.body.imagenes) && req.body.imagenes.length > 0) {
             console.log(`[IMAGEN] ✅ Procesando ${req.body.imagenes.length} imágenes...`);
-            
+
             for (const img of req.body.imagenes) {
                 try {
                     await ImagenesModel.create({
@@ -192,7 +192,7 @@ export const create = async (req, res) => {
                     console.error('[IMAGEN] ❌ Error registrando imagen:', imgError);
                 }
             }
-        } 
+        }
         // Backward compatibility: Si se proporcionó una sola imagen (imagen_url)
         else if (imagen_url) {
             console.log('[IMAGEN] ✅ Iniciando creación de registro de imagen única...');
@@ -269,8 +269,52 @@ export const update = async (req, res) => {
             return sendError(res, 'No se realizaron cambios', 400);
         }
 
+        // --- MANEJO DE IMÁGENES EN UPDATE ---
+        const { imagenes, imagen_url, imagen_prompt, modelo_ia } = req.body;
+
+        // 1. Si viene array de imagenes
+        if (imagenes && Array.isArray(imagenes) && imagenes.length > 0) {
+            console.log(`[UPDATE] Procesando ${imagenes.length} imágenes para contenido ${id}`);
+            for (const img of imagenes) {
+                // Verificar si ya existe esa URL para este contenido para no duplicar
+                // (Una verificación simple, idealmente se haría en DB)
+                const exists = await ImagenesModel.exists(parseInt(id), img.url);
+                if (!exists) {
+                    try {
+                        await ImagenesModel.create({
+                            contenido_id: parseInt(id),
+                            url_imagen: img.url,
+                            prompt_imagen: img.prompt || 'Imagen actualizada',
+                            modelo_ia: modelo_ia || 'dall-e-3'
+                        });
+                        console.log('[UPDATE] ✅ Nueva imagen registrada:', img.url);
+                    } catch (e) {
+                        console.error('[UPDATE] ❌ Error registrando imagen:', e);
+                    }
+                }
+            }
+        }
+        // 2. Si viene imagen única (imagen_url)
+        else if (imagen_url) {
+            const exists = await ImagenesModel.exists(parseInt(id), imagen_url);
+            if (!exists) {
+                try {
+                    await ImagenesModel.create({
+                        contenido_id: parseInt(id),
+                        url_imagen: imagen_url,
+                        prompt_imagen: imagen_prompt || 'Imagen actualizada',
+                        modelo_ia: modelo_ia || 'dall-e-3'
+                    });
+                    console.log('[UPDATE] ✅ Nueva imagen única registrada:', imagen_url);
+                } catch (e) {
+                    console.error('[UPDATE] ❌ Error registrando imagen única:', e);
+                }
+            }
+        }
+        // -------------------------------------
+
         const contenido = await ContenidoModel.getById(parseInt(id));
-        
+
         // Intentar programar automáticamente
         await handleScheduling(contenido);
 

@@ -90,3 +90,17 @@ export const countByContenido = async (contenidoId) => {
     );
     return rows[0].total;
 };
+
+/**
+ * Verifica si existe una imagen por contenido y URL
+ * @param {number} contenidoId - ID del contenido
+ * @param {string} url - URL de la imagen
+ * @returns {Promise<boolean>} True si existe
+ */
+export const exists = async (contenidoId, url) => {
+    const [rows] = await pool.query(
+        'SELECT id FROM imagenes WHERE contenido_id = ? AND url_imagen = ? LIMIT 1',
+        [contenidoId, url]
+    );
+    return rows.length > 0;
+};

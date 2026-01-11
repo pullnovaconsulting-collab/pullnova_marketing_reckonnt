@@ -24,8 +24,7 @@ const TIPO_ICONS = {
 const PLAT_ICONS = {
     instagram: '📸',
     facebook: '📘',
-    linkedin: '💼',
-    twitter: '🐦'
+    linkedin: '💼'
 };
 
 export default function ContenidoPage() {
@@ -306,9 +305,9 @@ export default function ContenidoPage() {
                         <span>Cargando contenido...</span>
                     </div>
                 ) : contenidos.length === 0 ? (
-                        <div className="empty-state">
-                            <FileText size={48} className="empty-state-icon" />
-                            <p>No hay contenido para mostrar</p>
+                    <div className="empty-state">
+                        <FileText size={48} className="empty-state-icon" />
+                        <p>No hay contenido para mostrar</p>
                         {isEditor && (
                             <button className="btn-primary" onClick={handleCreate} style={{ marginTop: '1rem' }}>
                                 Crear primer contenido
@@ -434,7 +433,7 @@ export default function ContenidoPage() {
                         </button>
                     </div>
                 )}
-                </div>
+            </div>
 
             <ContenidoModal
                 isOpen={modalOpen}

@@ -35,7 +35,8 @@ export const generarCopy = async ({
     tono = 'profesional',
     segmento = 'PyMEs',
     variaciones = 1,
-    contextoMarca = null
+    contextoMarca = null,
+    contextoCampaña = null
 }) => {
     try {
         // Construir prompt optimizado para marketing
@@ -46,7 +47,8 @@ export const generarCopy = async ({
             tono,
             segmento,
             variaciones,
-            contextoMarca
+            contextoMarca,
+            contextoCampaña
         });
 
         // Generar contenido con Gemini
@@ -232,7 +234,7 @@ Responde SOLO con el prompt en inglés, sin explicaciones.
 /**
  * Construye un prompt optimizado para generación de copy
  */
-function construirPromptCopy({ tema, plataforma, objetivo, tono, segmento, variaciones, contextoMarca }) {
+function construirPromptCopy({ tema, plataforma, objetivo, tono, segmento, variaciones, contextoMarca, contextoCampaña }) {
     const limiteCaracteres = {
         instagram: 2200,
         facebook: 500,
@@ -254,6 +256,16 @@ PARÁMETROS:
 - Audiencia: ${segmento}
 - Límite de caracteres: ${limite}
 `;
+
+    if (contextoCampaña) {
+        promptBase += `
+CONTEXTO DE CAMPAÑA:
+- Nombre: ${contextoCampaña.nombre}
+- Objetivo Campaña: ${contextoCampaña.objetivo || ''}
+- Descripción: ${contextoCampaña.descripcion || ''}
+- KPI Principal: ${contextoCampaña.kpi_principal || ''}
+`;
+    }
 
     if (contextoMarca) {
         promptBase += `

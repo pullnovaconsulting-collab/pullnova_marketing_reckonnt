@@ -2,13 +2,13 @@ import { useState } from 'react';
 import * as iaApi from '../../services/iaApi';
 import ImageTemplateEditor from './ImageTemplateEditor';
 
-export default function PostTab({ 
-    formData, 
-    handleChange, 
-    setFormData, 
-    aiError, 
-    setAiError, 
-    aiSuccess, 
+export default function PostTab({
+    formData,
+    handleChange,
+    setFormData,
+    aiError,
+    setAiError,
+    aiSuccess,
     setAiSuccess,
     confirmedImages,
     setConfirmedImages
@@ -59,17 +59,17 @@ export default function PostTab({
         try {
             setConfirmingImage(true);
             const res = await iaApi.uploadProcessedImage(formData);
-            
+
             const r2Url = res.data.url_imagen;
             const prompt = imagePreview.prompt_revisado || imagePreview.prompt_original;
-            
+
             setConfirmedImages(prev => [...prev, { url: r2Url, prompt: prompt }]);
-            
+
             // Limpiar estados
             setImagePreview(null);
             setShowTemplateEditor(false);
             setBaseImageForEditing(null);
-            
+
             setAiSuccess('Imagen procesada y guardada exitosamente');
             setTimeout(() => setAiSuccess(null), 3000);
         } catch (err) {
@@ -97,7 +97,8 @@ export default function PostTab({
                 tono: copyForm.tono,
                 variaciones: 1,
                 modelo: 'openai',
-                guardar: false
+                guardar: false,
+                campana_id: formData.campana_id
             });
 
             const contenidoGenerado = res.data.generacion.contenido;
@@ -150,16 +151,14 @@ export default function PostTab({
             setAiError(null);
 
             const res = await iaApi.generarPromptImagen({
-                descripcion: imagenForm.descripcion,
-                estilo: imagenForm.estilo,
-                colores: imagenForm.colores
+                descripcion: imagenForm.descripcion
             });
 
             const generatedPrompt = res.data.prompt || res.data.contenido || res.data.prompt_imagen || '';
-            
+
             // Agregar instrucción de posicionamiento para la plantilla
             const promptWithLayout = `${generatedPrompt}. IMPORTANTE: La imagen debe tener una composición asimétrica. El sujeto principal o elemento focal debe estar ubicado EXCLUSIVAMENTE en el tercio IZQUIERDO de la imagen. El lado DERECHO debe quedar vacío, con un fondo limpio, desenfocado o neutro, para permitir la superposición de texto.`;
-            
+
             setImagenForm(prev => ({ ...prev, prompt: promptWithLayout }));
             setAiSuccess('Prompt generado');
             setTimeout(() => setAiSuccess(null), 3000);
@@ -181,10 +180,7 @@ export default function PostTab({
             setAiError(null);
 
             const res = await iaApi.generarImagen({
-                prompt: imagenForm.prompt,
-                size: imagenForm.size,
-                quality: imagenForm.quality,
-                style: imagenForm.style
+                prompt: imagenForm.prompt
             });
 
             const imageUrl = res.data.url_temporal || res.data.url_imagen;
@@ -219,10 +215,10 @@ export default function PostTab({
 
             const r2Url = res.data.url_imagen;
             const prompt = imagePreview.prompt_revisado || imagePreview.prompt_original;
-            
+
             setConfirmedImages(prev => [...prev, { url: r2Url, prompt: prompt }]);
             setImagePreview(null);
-            
+
             setAiSuccess('Imagen confirmada - Se asociará al guardar el contenido');
             setTimeout(() => setAiSuccess(null), 3000);
         } catch (err) {
@@ -266,11 +262,11 @@ export default function PostTab({
             formData.append('image', manualFile);
 
             const res = await iaApi.uploadProcessedImage(formData);
-            
+
             setConfirmedImages(prev => [...prev, { url: res.data.url_imagen, prompt: 'Imagen subida manualmente' }]);
             setImagePreview(null);
             setManualFile(null);
-            
+
             setAiSuccess('Imagen subida exitosamente');
             setTimeout(() => setAiSuccess(null), 3000);
         } catch (err) {
@@ -496,73 +492,8 @@ export default function PostTab({
                                             placeholder="Prompt optimizado para la generación de imagen..."
                                             rows={3}
                                         />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Paleta de Colores</label>
-                                        <div className="color-palettes" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                            {[
-                                                { id: 'blue', name: 'Azul Corporativo', colors: { primary: '#1e3a8a', secondary: '#3b82f6', text: '#ffffff' }, label: '🔵 Azul' },
-                                                { id: 'violet', name: 'Violeta Vibrante', colors: { primary: '#5b21b6', secondary: '#8b5cf6', text: '#ffffff' }, label: '🟣 Violeta' },
-                                                { id: 'red', name: 'Vino Elegante', colors: { primary: '#881337', secondary: '#be123c', text: '#ffffff' }, label: '🔴 Vino' }
-                                            ].map(palette => (
-                                                <button
-                                                    key={palette.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setImagenForm(prev => ({ ...prev, colores: palette.name, selectedPalette: palette }));
-                                                    }}
-                                                    style={{
-                                                        flex: 1,
-                                                        padding: '0.5rem',
-                                                        border: imagenForm.selectedPalette?.id === palette.id ? '2px solid var(--primary-color)' : '1px solid #ddd',
-                                                        borderRadius: '0.5rem',
-                                                        backgroundColor: palette.colors.primary,
-                                                        color: 'white',
-                                                        cursor: 'pointer',
-                                                        opacity: imagenForm.selectedPalette?.id === palette.id ? 1 : 0.7
-                                                    }}
-                                                >
-                                                    {palette.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label className="form-label">Tamaño</label>
-                                            <select
-                                                className="form-select"
-                                                value={imagenForm.size}
-                                                onChange={(e) => setImagenForm(prev => ({ ...prev, size: e.target.value }))}
-                                            >
-                                                <option value="1024x1024">1024x1024 (Cuadrado)</option>
-                                                <option value="1792x1024">1792x1024 (Horizontal)</option>
-                                                <option value="1024x1792">1024x1792 (Vertical)</option>
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">Calidad</label>
-                                            <select
-                                                className="form-select"
-                                                value={imagenForm.quality}
-                                                onChange={(e) => setImagenForm(prev => ({ ...prev, quality: e.target.value }))}
-                                            >
-                                                <option value="standard">Standard</option>
-                                                <option value="hd">HD</option>
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label">Estilo</label>
-                                            <select
-                                                className="form-select"
-                                                value={imagenForm.style}
-                                                onChange={(e) => setImagenForm(prev => ({ ...prev, style: e.target.value }))}
-                                            >
-                                                <option value="vivid">Vivid</option>
-                                                <option value="natural">Natural</option>
-                                            </select>
+                                        <div className="form-hint" style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+                                            Tip: Describe el estilo, la iluminación y los colores directamente en el prompt.
                                         </div>
                                     </div>
 
@@ -587,7 +518,7 @@ export default function PostTab({
                                             style={{ padding: '1rem' }}
                                         />
                                     </div>
-                                    
+
                                     {/* Paleta de colores eliminada de la sección manual según requerimiento */}
                                 </div>
                             )}

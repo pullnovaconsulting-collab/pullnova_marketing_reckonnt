@@ -11,10 +11,10 @@ import * as api from '../services/api';
 import * as socialApi from '../services/socialApi';
 import * as iaApi from '../services/iaApi';
 import * as campanasApi from '../services/campanasApi';
-import { 
-    FileText, 
-    Clock, 
-    CheckCircle, 
+import {
+    FileText,
+    Clock,
+    CheckCircle,
     Calendar,
     Sparkles,
     Image,
@@ -34,7 +34,7 @@ export default function Dashboard() {
     const { user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    
+
     // Stats
     const [stats, setStats] = useState({
         generados: 0,
@@ -42,7 +42,7 @@ export default function Dashboard() {
         aprobados: 0,
         programados: 0
     });
-    
+
     // IA Generator
     const [generating, setGenerating] = useState(false);
     const [generatedContent, setGeneratedContent] = useState(null);
@@ -52,18 +52,18 @@ export default function Dashboard() {
         descripcion: '',
         campana_id: ''
     });
-    
+
     // Calendar
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(null);
     const [scheduledPosts, setScheduledPosts] = useState([]);
-    
+
     // Approval Queue
     const [pendingContent, setPendingContent] = useState([]);
-    
+
     // Social Connections
     const [socialStatus, setSocialStatus] = useState(null);
-    
+
     // UI State
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -104,7 +104,7 @@ export default function Dashboard() {
             });
 
             setCampanas(campanasRes.data?.data || []);
-            
+
             // Mock pending content for demo
             setPendingContent([
                 {
@@ -166,7 +166,7 @@ export default function Dashboard() {
 
     const handleDisconnect = async (id) => {
         if (!window.confirm('¿Estás seguro de desconectar esta cuenta?')) return;
-        
+
         try {
             await socialApi.disconnectAccount(id);
             setSuccess('Cuenta desconectada');
@@ -248,10 +248,10 @@ export default function Dashboard() {
 
     const handleApprove = (id) => {
         setPendingContent(prev => prev.filter(item => item.id !== id));
-        setStats(prev => ({ 
-            ...prev, 
+        setStats(prev => ({
+            ...prev,
             pendientes: prev.pendientes - 1,
-            aprobados: prev.aprobados + 1 
+            aprobados: prev.aprobados + 1
         }));
         setSuccess('Contenido aprobado');
         setTimeout(() => setSuccess(null), 2000);
@@ -272,29 +272,29 @@ export default function Dashboard() {
         const startingDay = firstDay.getDay();
 
         const days = [];
-        
+
         // Previous month days
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = startingDay - 1; i >= 0; i--) {
             days.push({ day: prevMonthLastDay - i, isCurrentMonth: false });
         }
-        
+
         // Current month days
         for (let i = 1; i <= daysInMonth; i++) {
             days.push({ day: i, isCurrentMonth: true, isToday: i === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear() });
         }
-        
+
         // Next month days
         const remainingDays = 42 - days.length;
         for (let i = 1; i <= remainingDays; i++) {
             days.push({ day: i, isCurrentMonth: false });
         }
-        
+
         return days;
     };
 
-    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     const navigateMonth = (direction) => {
         setCurrentDate(prev => {
@@ -330,8 +330,9 @@ export default function Dashboard() {
                 {/* Header */}
                 <div className="hub-header">
                     <div>
-                        <h1 className="hub-title">Marketing Intelligence Hub</h1>
-                        <p className="hub-subtitle">Genera, aprueba y programa contenido con IA para tus redes sociales</p>
+                        <h1 className="hub-title">Centro de Inteligencia de Marketing</h1>
+                        <p className="hub-subtitle">Sistema de Asistencia de Marketing con IA - Gestiona tus campañas,
+                            contenido y métricas en un solo lugar.</p>
                     </div>
                 </div>
 
@@ -387,7 +388,7 @@ export default function Dashboard() {
                             <h2>Conexiones de Redes Sociales</h2>
                         </div>
                         <p className="section-description">Conecta tus cuentas para publicar contenido directamente</p>
-                        
+
                         <div className="social-grid">
                             {/* Meta (Facebook/Instagram) */}
                             <div className="social-card">
@@ -409,7 +410,7 @@ export default function Dashboard() {
                                                             {cuenta.plataforma === 'facebook' ? <Facebook size={14} /> : <Instagram size={14} />}
                                                             {cuenta.nombre}
                                                         </span>
-                                                        <button 
+                                                        <button
                                                             className="btn-disconnect"
                                                             onClick={() => handleDisconnect(cuenta.id)}
                                                             title="Desconectar"
@@ -419,7 +420,7 @@ export default function Dashboard() {
                                                     </div>
                                                 ))
                                             }
-                                            <button 
+                                            <button
                                                 onClick={() => handleConnect('meta')}
                                                 className="btn-secondary btn-small"
                                             >
@@ -427,7 +428,7 @@ export default function Dashboard() {
                                             </button>
                                         </>
                                     ) : (
-                                        <button 
+                                        <button
                                             onClick={() => handleConnect('meta')}
                                             className="btn-primary"
                                         >
@@ -456,7 +457,7 @@ export default function Dashboard() {
                                                             <Linkedin size={14} />
                                                             {cuenta.nombre}
                                                         </span>
-                                                        <button 
+                                                        <button
                                                             className="btn-disconnect"
                                                             onClick={() => handleDisconnect(cuenta.id)}
                                                             title="Desconectar"
@@ -466,7 +467,7 @@ export default function Dashboard() {
                                                     </div>
                                                 ))
                                             }
-                                            <button 
+                                            <button
                                                 onClick={() => handleConnect('linkedin')}
                                                 className="btn-secondary btn-small"
                                             >
@@ -474,7 +475,7 @@ export default function Dashboard() {
                                             </button>
                                         </>
                                     ) : (
-                                        <button 
+                                        <button
                                             onClick={() => handleConnect('linkedin')}
                                             className="btn-primary"
                                         >
@@ -500,7 +501,7 @@ export default function Dashboard() {
                         <div className="generator-form">
                             <div className="form-group">
                                 <label className="form-label">Plataforma</label>
-                                <select 
+                                <select
                                     className="form-select"
                                     value={copyForm.plataforma}
                                     onChange={(e) => setCopyForm(prev => ({ ...prev, plataforma: e.target.value }))}
@@ -524,7 +525,7 @@ export default function Dashboard() {
                             </div>
 
                             <div className="generator-actions">
-                                <button 
+                                <button
                                     className="btn-primary"
                                     onClick={handleGenerarContenido}
                                     disabled={generating || !copyForm.descripcion.trim()}
@@ -532,7 +533,7 @@ export default function Dashboard() {
                                     {generating ? <RefreshCw size={18} className="spinning" /> : <Sparkles size={18} />}
                                     <span>{generating ? 'Generando...' : 'Generar Contenido'}</span>
                                 </button>
-                                <button 
+                                <button
                                     className="btn-secondary"
                                     onClick={handleGenerarImagen}
                                     disabled={generating || !copyForm.descripcion.trim()}
@@ -580,17 +581,17 @@ export default function Dashboard() {
                                     <ChevronRight size={20} />
                                 </button>
                             </div>
-                            
+
                             <div className="calendar-weekdays">
                                 {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map(day => (
                                     <div key={day} className="weekday">{day}</div>
                                 ))}
                             </div>
-                            
+
                             <div className="calendar-days">
                                 {getDaysInMonth(currentDate).map((day, index) => (
-                                    <div 
-                                        key={index} 
+                                    <div
+                                        key={index}
                                         className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${day.isToday ? 'today' : ''}`}
                                         onClick={() => day.isCurrentMonth && setSelectedDate(day.day)}
                                     >
@@ -638,7 +639,7 @@ export default function Dashboard() {
                                         <span className="approval-time">{item.fecha}</span>
                                         <span className="badge badge-warning">Pendiente</span>
                                     </div>
-                                    
+
                                     <div className="approval-content">
                                         <div className="approval-preview">
                                             {item.imagen ? (

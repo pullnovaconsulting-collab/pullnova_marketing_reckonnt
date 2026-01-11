@@ -40,7 +40,8 @@ export const generarCopy = async ({
     tono = 'profesional',
     segmento = 'PyMEs',
     variaciones = 1,
-    contextoMarca = null
+    contextoMarca = null,
+    contextoCampaña = null
 }) => {
     try {
         // Construir el prompt
@@ -51,7 +52,8 @@ export const generarCopy = async ({
             tono,
             segmento,
             variaciones,
-            contextoMarca
+            contextoMarca,
+            contextoCampaña
         });
 
         // Verificar cliente
@@ -238,7 +240,8 @@ const construirPromptCopy = ({
     tono,
     segmento,
     variaciones,
-    contextoMarca
+    contextoMarca,
+    contextoCampaña
 }) => {
     let prompt = `Genera ${variaciones} versión(es) de un post para ${plataforma} sobre: "${tema}"
 
@@ -247,6 +250,17 @@ REQUISITOS:
 - Tono: ${tono}
 - Audiencia: ${segmento}
 `;
+
+    // Agregar contexto de campaña si existe
+    if (contextoCampaña) {
+        prompt += `
+CONTEXTO DE CAMPAÑA:
+- Nombre Campaña: ${contextoCampaña.nombre}
+- Descripción: ${contextoCampaña.descripcion || ''}
+- Objetivo Campaña: ${contextoCampaña.objetivo || ''}
+- KPI Principal: ${contextoCampaña.kpi_principal || ''}
+`;
+    }
 
     // Agregar contexto de marca si existe
     if (contextoMarca) {

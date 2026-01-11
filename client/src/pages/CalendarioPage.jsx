@@ -26,7 +26,7 @@ export default function CalendarioPage() {
             const mes = currentDate.getMonth() + 1;
             const anio = currentDate.getFullYear();
             const response = await publicacionesApi.getCalendario(mes, anio);
-            
+
             if (response?.data?.publicaciones) {
                 // Transform API data to match expected format
                 const posts = response.data.publicaciones.map(pub => ({
@@ -60,7 +60,7 @@ export default function CalendarioPage() {
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
         const startingDay = firstDay.getDay();
-        
+
         const days = [];
         for (let i = 0; i < startingDay; i++) {
             days.push(null);
@@ -95,15 +95,15 @@ export default function CalendarioPage() {
         return icons[platform] || null;
     };
 
-    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const dayNames = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
 
     const today = new Date();
     const isToday = (day) => {
-        return day === today.getDate() && 
-               currentDate.getMonth() === today.getMonth() && 
-               currentDate.getFullYear() === today.getFullYear();
+        return day === today.getDate() &&
+            currentDate.getMonth() === today.getMonth() &&
+            currentDate.getFullYear() === today.getFullYear();
     };
 
     return (
@@ -128,19 +128,19 @@ export default function CalendarioPage() {
                                 <ChevronRight size={24} />
                             </button>
                         </div>
-                        
+
                         <div className="calendario-days-header">
                             {dayNames.map(day => (
                                 <div key={day} className="day-header">{day}</div>
                             ))}
                         </div>
-                        
+
                         <div className="calendario-days-grid">
                             {getDaysInMonth(currentDate).map((day, index) => {
                                 const posts = getPostsForDay(day);
                                 return (
-                                    <div 
-                                        key={index} 
+                                    <div
+                                        key={index}
                                         className={`day-cell ${day ? 'has-day' : ''} ${isToday(day) ? 'today' : ''} ${selectedDate === day ? 'selected' : ''}`}
                                         onClick={() => day && setSelectedDate(day)}
                                     >
@@ -166,19 +166,23 @@ export default function CalendarioPage() {
 
                     {/* Sidebar with scheduled posts */}
                     <div className="calendario-sidebar">
-                        <h3><Clock size={20} /> Próximas Publicaciones</h3>
+                        <h3><Clock size={20} /> {selectedDate ? `Publicaciones del día ${selectedDate}` : 'Próximas Publicaciones'}</h3>
                         <div className="scheduled-posts-list">
-                            {scheduledPosts.map(post => (
-                                <div key={post.id} className="scheduled-post-card">
-                                    <div className={`post-platform-icon ${post.platform}`}>
-                                        {getPlatformIcon(post.platform)}
+                            {(selectedDate ? getPostsForDay(selectedDate) : scheduledPosts).length > 0 ? (
+                                (selectedDate ? getPostsForDay(selectedDate) : scheduledPosts).map(post => (
+                                    <div key={post.id} className="scheduled-post-card">
+                                        <div className={`post-platform-icon ${post.platform}`}>
+                                            {getPlatformIcon(post.platform)}
+                                        </div>
+                                        <div className="post-info">
+                                            <span className="post-title">{post.title}</span>
+                                            <span className="post-datetime">{post.date} - {post.time}</span>
+                                        </div>
                                     </div>
-                                    <div className="post-info">
-                                        <span className="post-title">{post.title}</span>
-                                        <span className="post-datetime">{post.date} - {post.time}</span>
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="no-posts-message">No hay publicaciones para este día.</p>
+                            )}
                         </div>
                     </div>
                 </div>

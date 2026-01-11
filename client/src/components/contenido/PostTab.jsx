@@ -278,157 +278,140 @@ export default function PostTab({
 
     return (
         <>
-            {/* Generador de Texto con IA */}
-            <div className="ai-section">
-                <button
-                    type="button"
-                    className="ai-section-toggle"
-                    onClick={() => setShowTextAI(!showTextAI)}
-                >
-                    {showTextAI ? '▼' : '▶'} 🤖 Generar Texto con IA
-                </button>
+            {/* Generador de Texto con IA - Solo para tipo 'post' */}
+            {formData.tipo === 'post' && (
+                <div className="ai-section">
+                    <button
+                        type="button"
+                        className="ai-section-toggle"
+                        onClick={() => setShowTextAI(!showTextAI)}
+                    >
+                        {showTextAI ? '▼' : '▶'} 🤖 Generar Texto con IA
+                    </button>
 
-                {showTextAI && (
-                    <div className="ai-section-content">
-                        <div className="ai-mode-tabs">
-                            <button
-                                type="button"
-                                className={`ai-mode-tab ${textAIMode === 'copy' ? 'active' : ''}`}
-                                onClick={() => setTextAIMode('copy')}
-                            >
-                                Generar Copy
-                            </button>
-                            <button
-                                type="button"
-                                className={`ai-mode-tab ${textAIMode === 'mejorar' ? 'active' : ''}`}
-                                onClick={() => setTextAIMode('mejorar')}
-                            >
-                                Mejorar Texto
-                            </button>
-                        </div>
+                    {showTextAI && (
+                        <div className="ai-section-content">
+                            <div className="ai-mode-tabs">
+                                <button
+                                    type="button"
+                                    className={`ai-mode-tab ${textAIMode === 'copy' ? 'active' : ''}`}
+                                    onClick={() => setTextAIMode('copy')}
+                                >
+                                    Generar Copy
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`ai-mode-tab ${textAIMode === 'mejorar' ? 'active' : ''}`}
+                                    onClick={() => setTextAIMode('mejorar')}
+                                >
+                                    Mejorar Texto
+                                </button>
+                            </div>
 
-                        {textAIMode === 'copy' && (
-                            <div className="ai-form">
-                                <div className="form-group">
-                                    <label className="form-label">Tema del contenido *</label>
-                                    <textarea
-                                        className="form-input form-textarea"
-                                        value={copyForm.tema}
-                                        onChange={(e) => setCopyForm(prev => ({ ...prev, tema: e.target.value }))}
-                                        placeholder="Ej: Promoción de Black Friday con 30% de descuento"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                <div className="form-row">
+                            {textAIMode === 'copy' && (
+                                <div className="ai-form">
                                     <div className="form-group">
-                                        <label className="form-label">Plataforma</label>
-                                        <select
-                                            className="form-select"
-                                            value={copyForm.plataforma}
-                                            onChange={(e) => setCopyForm(prev => ({ ...prev, plataforma: e.target.value }))}
-                                        >
-                                            <option value="instagram">Instagram</option>
-                                            <option value="facebook">Facebook</option>
-                                            <option value="linkedin">LinkedIn</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Objetivo</label>
-                                        <select
-                                            className="form-select"
-                                            value={copyForm.objetivo}
-                                            onChange={(e) => setCopyForm(prev => ({ ...prev, objetivo: e.target.value }))}
-                                        >
-                                            <option value="educar">Educar</option>
-                                            <option value="promocionar">Promocionar</option>
-                                            <option value="convertir">Convertir</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Tono</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={copyForm.tono}
-                                            onChange={(e) => setCopyForm(prev => ({ ...prev, tono: e.target.value }))}
-                                            placeholder="profesional, casual..."
+                                        <label className="form-label">Tema del contenido *</label>
+                                        <textarea
+                                            className="form-input form-textarea"
+                                            value={copyForm.tema}
+                                            onChange={(e) => setCopyForm(prev => ({ ...prev, tema: e.target.value }))}
+                                            placeholder="Ej: Promoción de Black Friday con 30% de descuento"
+                                            rows={3}
                                         />
                                     </div>
-                                </div>
 
-                                <button
-                                    type="button"
-                                    className="btn-primary"
-                                    onClick={handleGenerarCopy}
-                                    disabled={generatingText || !copyForm.tema.trim()}
-                                >
-                                    {generatingText ? '⏳ Generando...' : '✨ Generar Copy'}
-                                </button>
-                            </div>
-                        )}
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label className="form-label">Plataforma</label>
+                                            <select
+                                                className="form-select"
+                                                value={copyForm.plataforma}
+                                                onChange={(e) => setCopyForm(prev => ({ ...prev, plataforma: e.target.value }))}
+                                            >
+                                                <option value="instagram">Instagram</option>
+                                                <option value="facebook">Facebook</option>
+                                                <option value="linkedin">LinkedIn</option>
+                                            </select>
+                                        </div>
 
-                        {textAIMode === 'mejorar' && (
-                            <div className="ai-form">
-                                <div className="form-group">
-                                    <label className="form-label">Texto a mejorar *</label>
-                                    <textarea
-                                        className="form-input form-textarea"
-                                        value={mejorarForm.texto}
-                                        onChange={(e) => setMejorarForm(prev => ({ ...prev, texto: e.target.value }))}
-                                        placeholder="Pega aquí el texto que quieres mejorar..."
-                                        rows={4}
-                                    />
-                                </div>
+                                    </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Instrucción</label>
-                                    <select
-                                        className="form-select"
-                                        value={mejorarForm.instruccion}
-                                        onChange={(e) => setMejorarForm(prev => ({ ...prev, instruccion: e.target.value }))}
+                                    <button
+                                        type="button"
+                                        className="btn-primary"
+                                        onClick={handleGenerarCopy}
+                                        disabled={generatingText || !copyForm.tema.trim()}
                                     >
-                                        <option value="mejorar para redes sociales">Mejorar para redes sociales</option>
-                                        <option value="hacerlo más profesional">Hacerlo más profesional</option>
-                                        <option value="hacerlo más casual y cercano">Hacerlo más casual</option>
-                                        <option value="resumir en menos palabras">Resumir</option>
-                                        <option value="expandir con más detalles">Expandir</option>
-                                        <option value="agregar emojis relevantes">Agregar emojis</option>
-                                    </select>
+                                        {generatingText ? '⏳ Generando...' : '✨ Generar Copy'}
+                                    </button>
                                 </div>
+                            )}
 
-                                <button
-                                    type="button"
-                                    className="btn-primary"
-                                    onClick={handleMejorarTexto}
-                                    disabled={generatingText || !mejorarForm.texto.trim()}
-                                >
-                                    {generatingText ? '⏳ Mejorando...' : '✨ Mejorar Texto'}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                            {textAIMode === 'mejorar' && (
+                                <div className="ai-form">
+                                    <div className="form-group">
+                                        <label className="form-label">Texto a mejorar *</label>
+                                        <textarea
+                                            className="form-input form-textarea"
+                                            value={mejorarForm.texto}
+                                            onChange={(e) => setMejorarForm(prev => ({ ...prev, texto: e.target.value }))}
+                                            placeholder="Pega aquí el texto que quieres mejorar..."
+                                            rows={4}
+                                        />
+                                    </div>
 
-            {/* Campo de texto del post */}
-            <div className="form-group">
-                <label className="form-label" htmlFor="copy_texto">
-                    Texto del Post
-                </label>
-                <textarea
-                    id="copy_texto"
-                    name="copy_texto"
-                    className="form-input form-textarea"
-                    value={formData.copy_texto}
-                    onChange={handleChange}
-                    placeholder="Escribe o genera el copy para la publicación..."
-                    rows={5}
-                />
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                    {formData.copy_texto.length} caracteres
+                                    <div className="form-group">
+                                        <label className="form-label">Instrucción</label>
+                                        <select
+                                            className="form-select"
+                                            value={mejorarForm.instruccion}
+                                            onChange={(e) => setMejorarForm(prev => ({ ...prev, instruccion: e.target.value }))}
+                                        >
+                                            <option value="mejorar para redes sociales">Mejorar para redes sociales</option>
+                                            <option value="hacerlo más profesional">Hacerlo más profesional</option>
+                                            <option value="hacerlo más casual y cercano">Hacerlo más casual</option>
+                                            <option value="resumir en menos palabras">Resumir</option>
+                                            <option value="expandir con más detalles">Expandir</option>
+                                            <option value="agregar emojis relevantes">Agregar emojis</option>
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="btn-primary"
+                                        onClick={handleMejorarTexto}
+                                        disabled={generatingText || !mejorarForm.texto.trim()}
+                                    >
+                                        {generatingText ? '⏳ Mejorando...' : '✨ Mejorar Texto'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
-            </div>
+            )}
+
+            {/* Campo de texto del post - Solo para tipo 'post' */}
+            {formData.tipo === 'post' && (
+                <div className="form-group">
+                    <label className="form-label" htmlFor="copy_texto">
+                        Texto del Post
+                    </label>
+                    <textarea
+                        id="copy_texto"
+                        name="copy_texto"
+                        className="form-input form-textarea"
+                        value={formData.copy_texto}
+                        onChange={handleChange}
+                        placeholder="Escribe o genera el copy para la publicación..."
+                        rows={5}
+                    />
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        {formData.copy_texto.length} caracteres
+                    </div>
+                </div>
+            )}
 
             {/* Sección de Imagen (IA o Manual) */}
             <div className="ai-section">
@@ -437,10 +420,12 @@ export default function PostTab({
                     className="ai-section-toggle"
                     onClick={() => setShowImageAI(!showImageAI)}
                 >
-                    {showImageAI ? '▼' : '▶'} 🖼️ Imagen del Post
+                    {showImageAI ? '▼' : '▶'} 🖼️ {formData.tipo === 'imagen' ? 'Generar Imagen' : 'Imagen del Post'}
                 </button>
 
+
                 {showImageAI && (
+
                     <div className="ai-section-content">
                         <div className="ai-mode-tabs">
                             <button
@@ -457,10 +442,17 @@ export default function PostTab({
                             >
                                 📤 Subir Imagen
                             </button>
+                            <button
+                                type="button"
+                                className={`ai-mode-tab ${imageSource === 'url' ? 'active' : ''}`}
+                                onClick={() => setImageSource('url')}
+                            >
+                                🔗 URL
+                            </button>
                         </div>
 
                         <div className="ai-form">
-                            {imageSource === 'ai' ? (
+                            {imageSource === 'ai' && (
                                 <>
                                     <div className="form-group">
                                         <label className="form-label">Descripción de la imagen</label>
@@ -480,7 +472,7 @@ export default function PostTab({
                                         disabled={generatingImage || !imagenForm.descripcion.trim()}
                                         style={{ marginBottom: '1rem', width: '100%' }}
                                     >
-                                        🪄 Generar Prompt Optimizado
+                                        Generar Prompt Optimizado
                                     </button>
 
                                     <div className="form-group">
@@ -506,7 +498,9 @@ export default function PostTab({
                                         {generatingImage ? '⏳ Generando imagen...' : '🎨 Generar Imagen'}
                                     </button>
                                 </>
-                            ) : (
+                            )}
+
+                            {imageSource === 'manual' && (
                                 <div className="manual-upload-section">
                                     <div className="form-group">
                                         <label className="form-label">Subir Imagen desde Dispositivo</label>
@@ -518,8 +512,57 @@ export default function PostTab({
                                             style={{ padding: '1rem' }}
                                         />
                                     </div>
+                                </div>
+                            )}
 
-                                    {/* Paleta de colores eliminada de la sección manual según requerimiento */}
+                            {imageSource === 'url' && (
+                                <div className="url-input-section">
+                                    <div className="form-group">
+                                        <label className="form-label">URL de la Imagen</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.contenido}
+                                            onChange={handleChange}
+                                            name="contenido"
+                                            placeholder="https://ejemplo.com/imagen.jpg"
+                                        />
+                                        <div className="form-hint" style={{ marginTop: '0.5rem' }}>
+                                            Ingresa la URL directa de una imagen existente.
+                                        </div>
+                                        {formData.contenido && (
+                                            <div style={{ marginTop: '1rem', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                                                <img
+                                                    src={formData.contenido}
+                                                    alt="Preview URL"
+                                                    style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', display: 'block' }}
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = 'https://via.placeholder.com/400x300?text=Error+Loading+Image';
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn-success"
+                                        onClick={() => {
+                                            if (formData.contenido) {
+                                                setConfirmedImages(prev => [...prev, { url: formData.contenido, prompt: 'Importado desde URL' }]);
+                                                setAiSuccess('Imagen agregada desde URL');
+                                                setTimeout(() => setAiSuccess(null), 3000);
+                                                // Clean input to allow adding another one if needed, or keep it?
+                                                // setFormData(prev => ({...prev, contenido: ''})); // Maybe keep it to show what was added, or clear. 
+                                                // Actually existing logic uses formData.contenido as the field. If we add to confirmedImages, we probably should clear it or treat it as "the" image.
+                                                // For now, let's just add it.
+                                            }
+                                        }}
+                                        disabled={!formData.contenido}
+                                        style={{ marginTop: '1rem' }}
+                                    >
+                                        ✓ Confirmar URL
+                                    </button>
                                 </div>
                             )}
 
@@ -562,15 +605,20 @@ export default function PostTab({
                                             >
                                                 {confirmingImage ? '⏳ Guardando...' : '✓ Usar Original'}
                                             </button>
-                                            <button
-                                                type="button"
-                                                className="btn-primary"
-                                                onClick={handleOpenEditor}
-                                                disabled={confirmingImage}
-                                                style={{ backgroundColor: '#4F46E5' }}
-                                            >
-                                                🎨 Personalizar con Plantilla
-                                            </button>
+
+                                            {/* Mostrar botón de personalizar SOLO si es tipo 'imagen' */}
+                                            {formData.tipo === 'imagen' && (
+                                                <button
+                                                    type="button"
+                                                    className="btn-primary"
+                                                    onClick={handleOpenEditor}
+                                                    disabled={confirmingImage}
+                                                    style={{ backgroundColor: '#4F46E5' }}
+                                                >
+                                                    🎨 Personalizar con Plantilla
+                                                </button>
+                                            )}
+
                                             <button
                                                 type="button"
                                                 className="btn-danger"
@@ -624,25 +672,7 @@ export default function PostTab({
                         ))}
                     </div>
                 </div>
-            ) : (
-                <div className="form-group">
-                    <label className="form-label" htmlFor="contenido">
-                        URL de Imagen (Opcional)
-                    </label>
-                    <input
-                        type="text"
-                        id="contenido"
-                        name="contenido"
-                        className="form-input"
-                        value={formData.contenido}
-                        onChange={handleChange}
-                        placeholder="O ingresa una URL manualmente..."
-                    />
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        Genera una imagen con IA arriba o ingresa una URL manualmente
-                    </div>
-                </div>
-            )}
+            ) : null}
         </>
     );
 }

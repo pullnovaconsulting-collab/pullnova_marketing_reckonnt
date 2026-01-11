@@ -10,8 +10,7 @@ import StoryTab from './contenido/StoryTab';
 
 const TIPOS = [
     { value: 'post', label: 'Post', icon: '📝' },
-    { value: 'video', label: 'Video', icon: '🎬' },
-    { value: 'story', label: 'Story', icon: '📱' }
+    { value: 'imagen', label: 'Imagen', icon: '🖼️' }
 ];
 
 const PLATAFORMAS = [
@@ -27,7 +26,6 @@ const ESTADOS = [
     { value: 'publicado', label: 'Publicado', color: 'purple' },
     { value: 'rechazado', label: 'Rechazado', color: 'red' }
 ];
-
 export default function ContenidoModal({ isOpen, onClose, onSave, contenido, campanas = [], loading }) {
     const isEditing = !!contenido;
 
@@ -125,6 +123,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
 
         const dataToSave = {
             ...formData,
+            tipo: activeTab, // Usar activeTab como tipo final
             campana_id: formData.campana_id ? parseInt(formData.campana_id) : null,
             fecha_publicacion: formData.fecha_publicacion || null
         };
@@ -159,8 +158,44 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                     <button className="modal-close" onClick={onClose}>×</button>
                 </div>
 
-                {/* Tabs de tipo de contenido */}
-
+                {/* Selector de Tipo de Contenido */}
+                <div className="type-selector-container" style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
+                    <div className="type-selector" style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        borderBottom: '2px solid #eee',
+                        paddingBottom: '0.5rem'
+                    }}>
+                        {TIPOS.map(tipo => (
+                            <button
+                                key={tipo.value}
+                                type="button"
+                                className={`type-btn ${activeTab === tipo.value ? 'active' : ''}`}
+                                onClick={() => {
+                                    setActiveTab(tipo.value);
+                                    setFormData(prev => ({ ...prev, tipo: tipo.value }));
+                                }}
+                                style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    padding: '0.5rem 1rem',
+                                    fontSize: '1rem',
+                                    fontWeight: activeTab === tipo.value ? '600' : '400',
+                                    color: activeTab === tipo.value ? 'var(--primary-color)' : '#666',
+                                    borderBottom: activeTab === tipo.value ? '2px solid var(--primary-color)' : 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    marginBottom: '-0.6rem' // overlap border
+                                }}
+                            >
+                                <span>{tipo.icon}</span>
+                                {tipo.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
@@ -168,26 +203,50 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                         {aiSuccess && <div className="alert alert-success">✓ {aiSuccess}</div>}
                         {aiError && <div className="alert alert-error">⚠️ {aiError}</div>}
 
-                        {/* Título */}
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="titulo">
-                                Título *
-                            </label>
-                            <input
-                                type="text"
-                                id="titulo"
-                                name="titulo"
-                                className="form-input"
-                                value={formData.titulo}
-                                onChange={handleChange}
-                                placeholder="Título del contenido"
-                            />
-                            {errors.titulo && <span className="form-error">{errors.titulo}</span>}
+                        <div className="form-row">
+                            {/* Título */}
+                            <div className="form-group" style={{ flex: 2 }}>
+                                <label className="form-label" htmlFor="titulo">
+                                    Título *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="titulo"
+                                    name="titulo"
+                                    className="form-input"
+                                    value={formData.titulo}
+                                    onChange={handleChange}
+                                    placeholder="Título del contenido"
+                                />
+                                {errors.titulo && <span className="form-error">{errors.titulo}</span>}
+                            </div>
+
+                            {/* Campaña Asociada - MOVIDO AQUÍ */}
+                            <div className="form-group" style={{ flex: 1 }}>
+                                <label className="form-label" htmlFor="campana_id">
+                                    Campaña Asociada
+                                </label>
+                                <select
+                                    id="campana_id"
+                                    name="campana_id"
+                                    className="form-select"
+                                    value={formData.campana_id}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Sin campaña</option>
+                                    {campanas.map(camp => (
+                                        <option key={camp.id} value={camp.id}>
+                                            {camp.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
+
                         {/* Renderizado dinámico de pestañas */}
-                        {activeTab === 'post' && (
+                        {(activeTab === 'post' || activeTab === 'imagen') && (
                             <PostTab
-                                formData={formData}
+                                formData={{ ...formData, tipo: activeTab }} // Asegurar que pase el tipo correcto
                                 handleChange={handleChange}
                                 setFormData={setFormData}
                                 aiError={aiError}
@@ -199,13 +258,10 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                             />
                         )}
 
-                        {activeTab === 'video' && <VideoTab />}
-                        {activeTab === 'story' && <StoryTab />}
+
 
                         {/* Campos comunes a todos los tipos */}
                         <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
-
-
                             {/* Plataforma */}
                             <div className="form-group">
                                 <label className="form-label">Plataforma</label>
@@ -224,27 +280,8 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                                 </div>
                             </div>
 
-                            {/* Campaña y Estado */}
+                            {/* Estado y Fecha */}
                             <div className="form-row">
-                                <div className="form-group">
-                                    <label className="form-label" htmlFor="campana_id">
-                                        Campaña Asociada
-                                    </label>
-                                    <select
-                                        id="campana_id"
-                                        name="campana_id"
-                                        className="form-select"
-                                        value={formData.campana_id}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="">Sin campaña</option>
-                                        {campanas.map(camp => (
-                                            <option key={camp.id} value={camp.id}>
-                                                {camp.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
                                 <div className="form-group">
                                     <label className="form-label" htmlFor="estado">
                                         Estado
@@ -263,21 +300,20 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                                         ))}
                                     </select>
                                 </div>
-                            </div>
 
-                            {/* Fecha de publicación */}
-                            <div className="form-group">
-                                <label className="form-label" htmlFor="fecha_publicacion">
-                                    Fecha de Publicación Programada
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    id="fecha_publicacion"
-                                    name="fecha_publicacion"
-                                    className="form-input"
-                                    value={formData.fecha_publicacion}
-                                    onChange={handleChange}
-                                />
+                                <div className="form-group">
+                                    <label className="form-label" htmlFor="fecha_publicacion">
+                                        Fecha de Publicación
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        id="fecha_publicacion"
+                                        name="fecha_publicacion"
+                                        className="form-input"
+                                        value={formData.fecha_publicacion}
+                                        onChange={handleChange}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -291,6 +327,8 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                         >
                             Cancelar
                         </button>
+
+
                         <button
                             type="submit"
                             className="btn-primary"
@@ -300,7 +338,7 @@ export default function ContenidoModal({ isOpen, onClose, onSave, contenido, cam
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

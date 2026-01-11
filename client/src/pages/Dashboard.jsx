@@ -24,7 +24,9 @@ import {
     Instagram,
     Linkedin,
     Facebook,
-    RefreshCw
+    RefreshCw,
+    Link2,
+    Unlink
 } from 'lucide-react';
 import '../styles/Hub.css';
 
@@ -58,6 +60,9 @@ export default function Dashboard() {
     
     // Approval Queue
     const [pendingContent, setPendingContent] = useState([]);
+    
+    // Social Connections
+    const [socialStatus, setSocialStatus] = useState(null);
     
     // UI State
     const [loading, setLoading] = useState(true);
@@ -125,6 +130,51 @@ export default function Dashboard() {
             setError('Error al cargar datos');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Fetch social status
+    const fetchSocialStatus = async () => {
+        try {
+            const res = await socialApi.getStatus();
+            if (res?.data) {
+                setSocialStatus(res.data);
+            }
+        } catch (err) {
+            console.error('Error loading social status:', err);
+        }
+    };
+
+    // Load social status on mount for editors
+    useEffect(() => {
+        if (isEditor) {
+            fetchSocialStatus();
+        }
+    }, [isEditor]);
+
+    const handleConnect = async (platform) => {
+        try {
+            const res = await socialApi.getAuthUrl(platform);
+            if (res.data?.auth_url) {
+                window.location.href = res.data.auth_url;
+            }
+        } catch (err) {
+            console.error(`Error conectando ${platform}:`, err);
+            setError(`Error al conectar con ${platform}`);
+        }
+    };
+
+    const handleDisconnect = async (id) => {
+        if (!window.confirm('¿Estás seguro de desconectar esta cuenta?')) return;
+        
+        try {
+            await socialApi.disconnectAccount(id);
+            setSuccess('Cuenta desconectada');
+            fetchSocialStatus();
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (err) {
+            console.error('Error desconectando:', err);
+            setError('Error al desconectar la cuenta');
         }
     };
 
@@ -328,6 +378,114 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Social Connections Section */}
+                {isEditor && (
+                    <div className="hub-section social-connections-section">
+                        <div className="section-header">
+                            <Link2 size={20} />
+                            <h2>Conexiones de Redes Sociales</h2>
+                        </div>
+                        <p className="section-description">Conecta tus cuentas para publicar contenido directamente</p>
+                        
+                        <div className="social-grid">
+                            {/* Meta (Facebook/Instagram) */}
+                            <div className="social-card">
+                                <div className="social-card-header">
+                                    <div className="social-icon meta">
+                                        <Facebook size={20} />
+                                        <Instagram size={20} />
+                                    </div>
+                                    <span className="social-name">Meta (FB/IG)</span>
+                                </div>
+                                <div className="social-card-body">
+                                    {socialStatus?.cuentas?.filter(c => c.plataforma === 'facebook' || c.plataforma === 'instagram').length > 0 ? (
+                                        <>
+                                            {socialStatus.cuentas
+                                                .filter(c => c.plataforma === 'facebook' || c.plataforma === 'instagram')
+                                                .map(cuenta => (
+                                                    <div key={cuenta.id} className="connected-account">
+                                                        <span className="account-name">
+                                                            {cuenta.plataforma === 'facebook' ? <Facebook size={14} /> : <Instagram size={14} />}
+                                                            {cuenta.nombre}
+                                                        </span>
+                                                        <button 
+                                                            className="btn-disconnect"
+                                                            onClick={() => handleDisconnect(cuenta.id)}
+                                                            title="Desconectar"
+                                                        >
+                                                            <Unlink size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            }
+                                            <button 
+                                                onClick={() => handleConnect('meta')}
+                                                className="btn-secondary btn-small"
+                                            >
+                                                <RefreshCw size={14} /> Agregar otra cuenta
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button 
+                                            onClick={() => handleConnect('meta')}
+                                            className="btn-primary"
+                                        >
+                                            Conectar Facebook
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* LinkedIn */}
+                            <div className="social-card">
+                                <div className="social-card-header">
+                                    <div className="social-icon linkedin">
+                                        <Linkedin size={20} />
+                                    </div>
+                                    <span className="social-name">LinkedIn</span>
+                                </div>
+                                <div className="social-card-body">
+                                    {socialStatus?.cuentas?.filter(c => c.plataforma === 'linkedin').length > 0 ? (
+                                        <>
+                                            {socialStatus.cuentas
+                                                .filter(c => c.plataforma === 'linkedin')
+                                                .map(cuenta => (
+                                                    <div key={cuenta.id} className="connected-account">
+                                                        <span className="account-name">
+                                                            <Linkedin size={14} />
+                                                            {cuenta.nombre}
+                                                        </span>
+                                                        <button 
+                                                            className="btn-disconnect"
+                                                            onClick={() => handleDisconnect(cuenta.id)}
+                                                            title="Desconectar"
+                                                        >
+                                                            <Unlink size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            }
+                                            <button 
+                                                onClick={() => handleConnect('linkedin')}
+                                                className="btn-secondary btn-small"
+                                            >
+                                                <RefreshCw size={14} /> Reconectar
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button 
+                                            onClick={() => handleConnect('linkedin')}
+                                            className="btn-primary"
+                                        >
+                                            Conectar LinkedIn
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Main Content - 2 Column Layout */}
                 <div className="hub-grid">

@@ -17,6 +17,7 @@ export const getDashboard = async (req, res) => {
 
         // Calcular métricas adicionales
         const totales = stats.totales || {};
+        const operativas = stats.operativas || {}; // NUEVO
         const engagement = parseFloat(totales.engagement_promedio) || 0;
 
         // Estimar ahorro de tiempo (aproximación)
@@ -26,6 +27,16 @@ export const getDashboard = async (req, res) => {
         const tiempoAhorradoHoras = (tiempoAhorradoMinutos / 60).toFixed(1);
 
         return sendSuccess(res, {
+            stats: {
+                // Mapear stats operativas para el dashboard (NUEVO)
+                campanas_activas: operativas.campanas_activas || 0,
+                contenido_generado: operativas.contenido_generado || 0,
+                programadas: operativas.publicaciones_programadas || 0,
+                pendientes: operativas.publicaciones_pendientes || 0,
+
+                // Mantener compatibilidad con stats anteriores
+                contenido: totalPosts
+            },
             resumen: {
                 total_publicaciones: totalPosts,
                 total_likes: parseInt(totales.total_likes) || 0,

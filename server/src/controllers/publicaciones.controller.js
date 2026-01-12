@@ -212,35 +212,75 @@ export const getByContenido = async (req, res) => {
 export const getCalendario = async (req, res) => {
     try {
         const { desde, hasta } = req.query;
+        const { pool } = await import('../config/db.js');
 
-        let query = `
-            SELECT pp.*, 
+        // 1. Obtener Publicaciones Programadas (Ya existente)
+        let queryProgramadas = `
+            SELECT pp.id, pp.fecha_programada, pp.estado,
+                   pp.contenido_id, pp.cuenta_social_id,
                    c.titulo, c.plataforma as contenido_plataforma,
-                   cs.nombre_cuenta
+                   cs.nombre_cuenta,
+                   'programado' as source_type
             FROM publicaciones_programadas pp
             LEFT JOIN contenido c ON pp.contenido_id = c.id
             LEFT JOIN cuentas_sociales cs ON pp.cuenta_social_id = cs.id
             WHERE 1=1
         `;
-        const params = [];
+        const paramsProgramadas = [];
 
         if (desde) {
-            query += ' AND pp.fecha_programada >= ?';
-            params.push(desde);
+            queryProgramadas += ' AND pp.fecha_programada >= ?';
+            paramsProgramadas.push(desde);
         }
         if (hasta) {
-            query += ' AND pp.fecha_programada <= ?';
-            params.push(hasta);
+            queryProgramadas += ' AND pp.fecha_programada <= ?';
+            paramsProgramadas.push(hasta);
         }
 
-        query += ' ORDER BY pp.fecha_programada ASC';
+        // 2. Obtener Contenido con Fecha pero NO programado (Pendientes/Aprobados)
+        // Esto soluciona los "items fantasma" y asegura sincronización instantánea
+        let queryContenido = `
+            SELECT c.id as contenido_id, c.fecha_publicacion as fecha_programada, c.estado,
+                   c.titulo, c.plataforma as contenido_plataforma,
+                   NULL as id, NULL as cuenta_social_id, NULL as nombre_cuenta,
+                   'contenido' as source_type
+            FROM contenido c
+            WHERE c.fecha_publicacion IS NOT NULL
+            AND c.estado != 'programado'
+        `;
+        const paramsContenido = [];
 
-        const { pool } = await import('../config/db.js');
-        const [rows] = await pool.query(query, params);
+        if (desde) {
+            queryContenido += ' AND c.fecha_publicacion >= ?';
+            paramsContenido.push(desde);
+        }
+        if (hasta) {
+            queryContenido += ' AND c.fecha_publicacion <= ?';
+            paramsContenido.push(hasta);
+        }
+
+        // Ejecutar ambas consultas en paralelo
+        const [rowsProgramadas, rowsContenido] = await Promise.all([
+            pool.query(queryProgramadas, paramsProgramadas).then(([rows]) => rows),
+            pool.query(queryContenido, paramsContenido).then(([rows]) => rows)
+        ]);
+
+        // Combinar resultados
+        // Mapeamos el contenido para que tenga la estructura que espera el frontend
+        const contenidoMapeado = rowsContenido.map(c => ({
+            ...c,
+            id: `temp-${c.contenido_id}`, // ID temporal para keys de React
+            es_proyeccion: true // Flag para indicar que no es una publicación real todavía
+        }));
+
+        const allEvents = [...rowsProgramadas, ...contenidoMapeado];
+
+        // Ordenar por fecha
+        allEvents.sort((a, b) => new Date(a.fecha_programada) - new Date(b.fecha_programada));
 
         // Agrupar por fecha para el calendario
         const calendario = {};
-        rows.forEach(pub => {
+        allEvents.forEach(pub => {
             const fecha = new Date(pub.fecha_programada).toISOString().split('T')[0];
             if (!calendario[fecha]) {
                 calendario[fecha] = [];
@@ -249,9 +289,9 @@ export const getCalendario = async (req, res) => {
         });
 
         return sendSuccess(res, {
-            publicaciones: rows,
+            publicaciones: allEvents,
             calendario,
-            total: rows.length
+            total: allEvents.length
         });
     } catch (error) {
         console.error('Error obteniendo calendario:', error);

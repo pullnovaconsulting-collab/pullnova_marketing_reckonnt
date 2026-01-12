@@ -33,9 +33,11 @@ export default function CalendarioPage() {
                     id: pub.id,
                     date: pub.fecha_programada?.split('T')[0] || pub.fecha_programada,
                     title: pub.contenido_titulo || pub.titulo || 'Publicación programada',
-                    platform: pub.plataforma?.toLowerCase() || 'instagram',
+                    // Use contenido_plataforma as fallback since pending items might not have plataforma at top level
+                    platform: (pub.plataforma || pub.contenido_plataforma || 'instagram').toLowerCase(),
                     time: pub.fecha_programada?.split('T')[1]?.substring(0, 5) || '12:00',
-                    estado: pub.estado
+                    estado: pub.estado || 'pendiente', // Default to pendiente if missing
+                    isProjection: pub.es_proyeccion // Track if it's a projection
                 }));
                 setScheduledPosts(posts);
             }

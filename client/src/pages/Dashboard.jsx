@@ -97,10 +97,10 @@ export default function Dashboard() {
             ]);
 
             setStats({
-                generados: statsRes?.stats?.contenido || 0,
-                pendientes: 8,
-                aprobados: 45,
-                programados: 23
+                generados: statsRes?.data?.stats?.contenido_generado || 0,
+                campanas: statsRes?.data?.stats?.campanas_activas || 0,
+                pendientes: statsRes?.data?.stats?.pendientes || 0,
+                programados: statsRes?.data?.stats?.programadas || 0
             });
 
             setCampanas(campanasRes.data?.data || []);
@@ -344,29 +344,20 @@ export default function Dashboard() {
                 <div className="kpi-grid">
                     <div className="kpi-card">
                         <div className="kpi-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)' }}>
-                            <FileText size={24} />
+                            <Sparkles size={24} />
                         </div>
                         <div className="kpi-content">
-                            <span className="kpi-value">{stats.generados}</span>
-                            <span className="kpi-label">Contenido generado</span>
+                            <span className="kpi-value">{stats.campanas}</span>
+                            <span className="kpi-label">Campañas Activas</span>
                         </div>
                     </div>
                     <div className="kpi-card">
                         <div className="kpi-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)' }}>
-                            <Clock size={24} />
+                            <FileText size={24} />
                         </div>
                         <div className="kpi-content">
-                            <span className="kpi-value">{stats.pendientes}</span>
-                            <span className="kpi-label">Pendientes de aprobación</span>
-                        </div>
-                    </div>
-                    <div className="kpi-card">
-                        <div className="kpi-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
-                            <CheckCircle size={24} />
-                        </div>
-                        <div className="kpi-content">
-                            <span className="kpi-value">{stats.aprobados}</span>
-                            <span className="kpi-label">Publicaciones aprobadas</span>
+                            <span className="kpi-value">{stats.generados}</span>
+                            <span className="kpi-label">Contenido Generado</span>
                         </div>
                     </div>
                     <div className="kpi-card">
@@ -375,7 +366,16 @@ export default function Dashboard() {
                         </div>
                         <div className="kpi-content">
                             <span className="kpi-value">{stats.programados}</span>
-                            <span className="kpi-label">Programadas</span>
+                            <span className="kpi-label">Publicaciones Programadas</span>
+                        </div>
+                    </div>
+                    <div className="kpi-card">
+                        <div className="kpi-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
+                            <Clock size={24} />
+                        </div>
+                        <div className="kpi-content">
+                            <span className="kpi-value">{stats.pendientes}</span>
+                            <span className="kpi-label">Publicaciones Pendientes</span>
                         </div>
                     </div>
                 </div>

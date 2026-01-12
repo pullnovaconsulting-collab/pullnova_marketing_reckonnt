@@ -74,7 +74,7 @@ export async function changePassword(passwords) {
  * Obtiene estadísticas del sistema
  */
 export async function getStats() {
-    return apiRequest('/stats');
+    return apiRequest('/metricas/dashboard');
 }
 
 /**

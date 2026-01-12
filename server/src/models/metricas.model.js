@@ -265,7 +265,17 @@ export const getDashboardStats = async () => {
         GROUP BY plataforma
     `);
 
+    // Estadísticas operativas (NUEVO)
+    const [statsOperativas] = await pool.query(`
+        SELECT
+            (SELECT COUNT(*) FROM campanas WHERE estado = 'activa') as campanas_activas,
+            (SELECT COUNT(*) FROM contenido) as contenido_generado,
+            (SELECT COUNT(*) FROM publicaciones_programadas) as publicaciones_programadas,
+            (SELECT COUNT(*) FROM contenido WHERE estado = 'pendiente') as publicaciones_pendientes
+    `);
+
     return {
+        operativas: statsOperativas[0], // Nuevo campo
         totales: totales[0],
         ultimos_7_dias: ultimos7Dias,
         top_contenidos: topContenidos,

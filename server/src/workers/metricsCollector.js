@@ -140,12 +140,31 @@ const obtenerMetricasPlataforma = async (publicacion) => {
  */
 const obtenerMetricasFacebook = async (postId, accessToken) => {
     try {
+        // Primero intentamos obtener likes y comments que son universales
+        // El campo shares no existe en nodos de tipo Photo, lo manejaremos por separado
         const url = `https://graph.facebook.com/v18.0/${postId}?fields=likes.summary(true),comments.summary(true),shares&access_token=${accessToken}`;
 
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.error) {
+            // Si el error es específicamente por el campo shares, reintentamos sin él
+            if (data.error.message.includes('shares')) {
+                const retryUrl = `https://graph.facebook.com/v18.0/${postId}?fields=likes.summary(true),comments.summary(true)&access_token=${accessToken}`;
+                const retryResponse = await fetch(retryUrl);
+                const retryData = await retryResponse.json();
+                
+                if (retryData.error) throw new Error(retryData.error.message);
+                
+                return {
+                    success: true,
+                    datos: {
+                        likes: retryData.likes?.summary?.total_count || 0,
+                        comentarios: retryData.comments?.summary?.total_count || 0,
+                        compartidos: 0
+                    }
+                };
+            }
             throw new Error(data.error.message);
         }
 
@@ -168,13 +187,35 @@ const obtenerMetricasFacebook = async (postId, accessToken) => {
  */
 const obtenerMetricasInstagram = async (mediaId, accessToken) => {
     try {
-        const url = `https://graph.facebook.com/v18.0/${mediaId}/insights?metric=impressions,reach,likes,comments,saved&access_token=${accessToken}`;
+        // Primero intentamos obtener impresiones y alcance (Insights)
+        // Nota: Algunas publicaciones muy recientes o de ciertos tipos pueden no tener todos los insights de inmediato
+        const url = `https://graph.facebook.com/v18.0/${mediaId}/insights?metric=impressions,reach,saved&access_token=${accessToken}`;
 
         const response = await fetch(url);
         const data = await response.json();
 
+        // Si hay error en insights (como "Object does not exist"), intentamos obtener al menos likes/comments del nodo base
         if (data.error) {
-            throw new Error(data.error.message);
+            console.warn(`[MetricsCollector] Advertencia Instagram Insights para ${mediaId}:`, data.error.message);
+            
+            const baseUrl = `https://graph.facebook.com/v18.0/${mediaId}?fields=like_count,comments_count&access_token=${accessToken}`;
+            const baseResponse = await fetch(baseUrl);
+            const baseData = await baseResponse.json();
+
+            if (baseData.error) {
+                throw new Error(`Error base IG y error Insights: ${baseData.error.message}`);
+            }
+
+            return {
+                success: true,
+                datos: {
+                    likes: baseData.like_count || 0,
+                    comentarios: baseData.comments_count || 0,
+                    guardados: 0,
+                    impresiones: 0,
+                    alcance: 0
+                }
+            };
         }
 
         const metricas = {};
@@ -182,11 +223,16 @@ const obtenerMetricasInstagram = async (mediaId, accessToken) => {
             metricas[metric.name] = metric.values[0]?.value || 0;
         });
 
+        // Para likes y comentarios en IG, a veces es mejor pedirlos directamente al nodo si no vienen en insights
+        const baseUrl = `https://graph.facebook.com/v18.0/${mediaId}?fields=like_count,comments_count&access_token=${accessToken}`;
+        const baseResponse = await fetch(baseUrl);
+        const baseData = await baseResponse.json();
+
         return {
             success: true,
             datos: {
-                likes: metricas.likes || 0,
-                comentarios: metricas.comments || 0,
+                likes: baseData.like_count || metricas.likes || 0,
+                comentarios: baseData.comments_count || metricas.comments || 0,
                 guardados: metricas.saved || 0,
                 impresiones: metricas.impressions || 0,
                 alcance: metricas.reach || 0
